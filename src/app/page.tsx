@@ -1,101 +1,224 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useEffect, useState, useCallback } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { calculateLeaderboard, formatScore, type UserResult, type Golfer } from "@/lib/scoring";
+
+export default function LeaderboardPage() {
+  const [leaderboard, setLeaderboard] = useState<UserResult[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState<string>("");
+  const [expandedUser, setExpandedUser] = useState<string | null>(null);
+  const [tournamentState, setTournamentState] = useState<string>("pre");
+
+  const supabase = createClient();
+
+  const refreshScores = useCallback(async () => {
+    try {
+      const scoreRes = await fetch("/api/scores");
+      const scoreData = await scoreRes.json();
+      if (scoreData.tournamentState) {
+        setTournamentState(scoreData.tournamentState);
+      }
+    } catch (err) {
+      console.error("Score refresh error:", err);
+    }
+  }, []);
+
+  const loadLeaderboard = useCallback(async () => {
+    const [
+      { data: golfers },
+      { data: picks },
+      { data: tiebreakers },
+      { data: profiles },
+      { data: poolSettings },
+    ] = await Promise.all([
+      supabase.from("golfers").select("*"),
+      supabase.from("picks").select("*"),
+      supabase.from("tiebreakers").select("*"),
+      supabase.from("profiles").select("*"),
+      supabase.from("pool_settings").select("*").limit(1),
+    ]);
+
+    if (!golfers || !picks || !profiles || !poolSettings?.[0]) {
+      setLoading(false);
+      return;
+    }
+
+    const settings = {
+      drop_count: poolSettings[0].drop_count,
+      missed_cut_penalty: poolSettings[0].missed_cut_penalty,
+      tiebreaker_enabled: poolSettings[0].tiebreaker_enabled,
+    };
+
+    const results = calculateLeaderboard(
+      picks as any[],
+      tiebreakers || [],
+      profiles as any[],
+      golfers as Golfer[],
+      settings
+    );
+
+    setLeaderboard(results);
+    setLastUpdated(new Date().toLocaleTimeString());
+    setLoading(false);
+  }, [supabase]);
+
+  useEffect(() => {
+    refreshScores().then(() => loadLeaderboard());
+    const interval = setInterval(() => {
+      refreshScores().then(() => loadLeaderboard());
+    }, 60000);
+    return () => clearInterval(interval);
+  }, [refreshScores, loadLeaderboard]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="text-center">
+          <div className="animate-spin w-8 h-8 border-4 border-[#006747] border-t-transparent rounded-full mx-auto mb-4" />
+          <p className="text-gray-500">Loading leaderboard...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+    <div>
+      {/* Pool Status Banner */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6 flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-bold text-[#006747]">Pool Leaderboard</h2>
+          <p className="text-xs text-gray-500">
+            Pick 6 golfers (1 per tier) | Drop worst 2 | Lowest total wins
+          </p>
+        </div>
+        <div className="text-right text-xs text-gray-400">
+          <p>
+            Status:{" "}
+            <span className={`font-semibold ${tournamentState === "in" ? "text-green-600" : "text-gray-600"}`}>
+              {tournamentState === "pre" ? "Not Started" : tournamentState === "in" ? "LIVE" : "Final"}
+            </span>
+          </p>
+          {lastUpdated && <p>Updated: {lastUpdated}</p>}
+          <button
+            onClick={() => { refreshScores().then(() => loadLeaderboard()); }}
+            className="mt-1 text-[#006747] underline hover:no-underline"
+          >
+            Refresh
+          </button>
+        </div>
+      </div>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
+      {leaderboard.length === 0 ? (
+        <div className="text-center py-16 bg-white rounded-lg border border-gray-200">
+          <p className="text-gray-500 text-lg">No picks submitted yet.</p>
+          <a href="/picks" className="mt-3 inline-block text-[#006747] font-semibold underline">
+            Submit your picks
           </a>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      ) : (
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-[#006747] text-white text-xs uppercase tracking-wider">
+                <th className="px-4 py-3 text-left w-12">Rank</th>
+                <th className="px-4 py-3 text-left">Player</th>
+                <th className="px-4 py-3 text-center">Total</th>
+                <th className="px-4 py-3 text-center hidden sm:table-cell">Tiebreaker</th>
+                <th className="px-4 py-3 text-center w-8" />
+              </tr>
+            </thead>
+            <tbody>
+              {leaderboard.map((entry, i) => {
+                const isExpanded = expandedUser === entry.userId;
+                return (
+                  <tr
+                    key={entry.userId}
+                    className={`border-b border-gray-100 cursor-pointer hover:bg-green-50 transition-colors ${
+                      i === 0 ? "bg-yellow-50" : ""
+                    }`}
+                    onClick={() => setExpandedUser(isExpanded ? null : entry.userId)}
+                  >
+                    <td className="px-4 py-3 font-bold text-[#006747]">
+                      {entry.rank === 1 && i === 0 ? (
+                        <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-[#f2c75c] text-[#006747] text-xs font-bold">
+                          {entry.rank}
+                        </span>
+                      ) : (
+                        <span className="text-gray-600">{entry.rank}</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="font-semibold">{entry.displayName}</div>
+                      {isExpanded && (
+                        <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
+                          {entry.golferScores.map((gs) => (
+                            <div
+                              key={gs.tier}
+                              className={`rounded p-2 border text-xs ${
+                                gs.isDropped
+                                  ? "bg-gray-100 border-gray-200 dropped-golfer"
+                                  : gs.isMissedCut
+                                  ? "bg-red-50 border-red-200"
+                                  : "bg-white border-gray-200"
+                              }`}
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className="text-gray-400 font-mono">T{gs.tier}</span>
+                                <span
+                                  className={`font-bold ${
+                                    gs.effectiveScore < 0
+                                      ? "score-negative"
+                                      : gs.effectiveScore > 0
+                                      ? "score-positive"
+                                      : "score-even"
+                                  }`}
+                                >
+                                  {formatScore(gs.effectiveScore)}
+                                </span>
+                              </div>
+                              <div className="font-semibold mt-0.5 truncate">{gs.golfer.name}</div>
+                              <div className="text-gray-400 mt-0.5">
+                                {gs.golfer.thru || "-"}{" "}
+                                {gs.isMissedCut && (
+                                  <span className="text-red-500 font-semibold uppercase">
+                                    {gs.golfer.status}
+                                  </span>
+                                )}
+                                {gs.isDropped && <span className="text-gray-400">(dropped)</span>}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-center font-bold text-lg align-top">
+                      <span
+                        className={
+                          entry.totalScore < 0
+                            ? "score-negative"
+                            : entry.totalScore > 0
+                            ? "score-positive"
+                            : "score-even"
+                        }
+                      >
+                        {formatScore(entry.totalScore)}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-center text-gray-500 hidden sm:table-cell align-top">
+                      {entry.tiebreaker !== null ? entry.tiebreaker : "-"}
+                    </td>
+                    <td className="px-4 py-3 text-center text-gray-400 align-top">
+                      {isExpanded ? "\u25B2" : "\u25BC"}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

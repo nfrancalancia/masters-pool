@@ -3,25 +3,41 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --masters-green: #006747;
+  --masters-yellow: #f2c75c;
+  --masters-dark: #004d35;
+  --masters-light: #e8f5e9;
 }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  color: #1a1a1a;
+  background: #f8faf8;
+  font-family: "Georgia", "Times New Roman", serif;
 }
 
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
+/* Augusta-inspired styling */
+.masters-gradient {
+  background: linear-gradient(135deg, #006747 0%, #004d35 100%);
+}
+
+.score-negative {
+  color: #c62828;
+  font-weight: 700;
+}
+
+.score-positive {
+  color: #1a1a1a;
+}
+
+.score-even {
+  color: #555;
+}
+
+.dropped-golfer {
+  opacity: 0.45;
+  text-decoration: line-through;
+}
+
+.cut-golfer {
+  color: #999;
 }
