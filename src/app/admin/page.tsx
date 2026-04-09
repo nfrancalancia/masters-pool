@@ -5,13 +5,12 @@ import { createClient } from "@/lib/supabase/client";
 
 export default function AdminPage() {
   const [user, setUser] = useState<any>(null);
-  const [profile, setProfile] = useState<any>(null);
   const [poolSettings, setPoolSettings] = useState<any>(null);
-  const [inviteCode, setInviteCode] = useState("");
   const [participants, setParticipants] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [scoreStatus, setScoreStatus] = useState("");
+  const [accessDenied, setAccessDenied] = useState(false);
 
   const supabase = createClient();
 
@@ -23,19 +22,23 @@ export default function AdminPage() {
     }
     setUser(user);
 
-    const [{ data: prof }, { data: settings }, { data: profiles }, { data: picks }] =
+    const [{ data: settings }, { data: profiles }, { data: picks }] =
       await Promise.all([
-        supabase.from("profiles").select("*").eq("id", user.id).single(),
         supabase.from("pool_settings").select("*").limit(1),
         supabase.from("profiles").select("*"),
         supabase.from("picks").select("user_id"),
       ]);
 
-    setProfile(prof);
+    const pool = settings?.[0];
+    if (pool) {
+      setPoolSettings(pool);
 
-    if (settings?.[0]) {
-      setPoolSettings(settings[0]);
-      setInviteCode(settings[0].invite_code || "");
+      // If commissioner exists and it's not this user, deny access
+      if (pool.commissioner_id && pool.commissioner_id !== user.id) {
+        setAccessDenied(true);
+        setLoading(false);
+        return;
+      }
     }
 
     // Count picks per user
@@ -49,7 +52,6 @@ export default function AdminPage() {
       pickCount: pickCounts.get(p.id) || 0,
     }));
     setParticipants(parts);
-
     setLoading(false);
   }, [supabase]);
 
@@ -58,45 +60,45 @@ export default function AdminPage() {
   }, [loadData]);
 
   async function claimCommissioner() {
-    if (!user || !poolSettings) return;
-    const { error } = await supabase
-      .from("pool_settings")
-      .update({ commissioner_id: user.id })
-      .eq("id", poolSettings.id);
-
-    if (!error) {
-      await supabase
-        .from("profiles")
-        .update({ is_commissioner: true })
-        .eq("id", user.id);
+    setMessage("");
+    const res = await fetch("/api/admin", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "claim_commissioner" }),
+    });
+    const data = await res.json();
+    if (data.success) {
       setMessage("You are now the commissioner!");
       loadData();
     } else {
-      setMessage("Error: " + error.message);
+      setMessage("Error: " + (data.error || "Unknown error"));
     }
   }
 
   async function toggleLock() {
-    if (!poolSettings) return;
-    const { error } = await supabase
-      .from("pool_settings")
-      .update({ is_locked: !poolSettings.is_locked })
-      .eq("id", poolSettings.id);
-
-    if (!error) {
-      setMessage(poolSettings.is_locked ? "Pool unlocked!" : "Pool locked!");
+    setMessage("");
+    const res = await fetch("/api/admin", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "toggle_lock" }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      setMessage(data.is_locked ? "Pool locked!" : "Pool unlocked!");
       loadData();
+    } else {
+      setMessage("Error: " + (data.error || "Unknown error"));
     }
   }
 
   async function updateDeadline(newDeadline: string) {
-    if (!poolSettings) return;
-    const { error } = await supabase
-      .from("pool_settings")
-      .update({ entry_deadline: new Date(newDeadline).toISOString() })
-      .eq("id", poolSettings.id);
-
-    if (!error) {
+    const res = await fetch("/api/admin", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "update_deadline", deadline: newDeadline }),
+    });
+    const data = await res.json();
+    if (data.success) {
       setMessage("Deadline updated!");
       loadData();
     }
@@ -117,9 +119,6 @@ export default function AdminPage() {
     }
   }
 
-  const isCommissioner =
-    poolSettings?.commissioner_id === user?.id || profile?.is_commissioner;
-
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -128,11 +127,24 @@ export default function AdminPage() {
     );
   }
 
+  if (accessDenied) {
+    return (
+      <div className="max-w-md mx-auto mt-8 text-center">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
+          <p className="text-gray-600 mb-4">This page is only available to the pool commissioner.</p>
+          <a href="/" className="text-[#006747] font-semibold underline">Back to Leaderboard</a>
+        </div>
+      </div>
+    );
+  }
+
+  const isCommissioner = poolSettings?.commissioner_id === user?.id;
+
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-bold text-[#006747]">Pool Admin</h2>
 
-      {/* Commissioner claim */}
+      {/* Commissioner claim — only show if unclaimed */}
       {!poolSettings?.commissioner_id && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
           <p className="text-sm text-yellow-800 mb-2">
@@ -159,7 +171,7 @@ export default function AdminPage() {
               <input
                 readOnly
                 value={typeof window !== "undefined" ? `${window.location.origin}/login` : ""}
-                className="flex-1 px-3 py-2 bg-gray-50 border border-gray-300 rounded text-sm font-mono"
+                className="flex-1 px-3 py-2 bg-gray-50 border border-gray-300 rounded text-sm font-mono min-w-0"
               />
               <button
                 onClick={() => {
@@ -171,7 +183,6 @@ export default function AdminPage() {
                 Copy
               </button>
             </div>
-            <p className="text-xs text-gray-400 mt-1">Pool code: {inviteCode}</p>
           </div>
 
           {/* Pool Controls */}
@@ -179,8 +190,8 @@ export default function AdminPage() {
             <h3 className="font-semibold text-[#006747]">Pool Controls</h3>
 
             {/* Lock toggle */}
-            <div className="flex items-center justify-between">
-              <div>
+            <div className="flex items-center justify-between gap-4">
+              <div className="min-w-0">
                 <p className="text-sm font-medium">Lock Picks</p>
                 <p className="text-xs text-gray-500">
                   {poolSettings?.is_locked
@@ -190,31 +201,29 @@ export default function AdminPage() {
               </div>
               <button
                 onClick={toggleLock}
-                className={`px-4 py-2 rounded text-sm font-semibold ${
+                className={`px-4 py-2 rounded text-sm font-semibold flex-shrink-0 ${
                   poolSettings?.is_locked
                     ? "bg-green-600 text-white"
                     : "bg-red-600 text-white"
                 }`}
               >
-                {poolSettings?.is_locked ? "Unlock Pool" : "Lock Pool"}
+                {poolSettings?.is_locked ? "Unlock" : "Lock"}
               </button>
             </div>
 
             {/* Deadline */}
             <div>
               <p className="text-sm font-medium mb-1">Entry Deadline</p>
-              <div className="flex items-center gap-2">
-                <input
-                  type="datetime-local"
-                  defaultValue={
-                    poolSettings?.entry_deadline
-                      ? new Date(poolSettings.entry_deadline).toISOString().slice(0, 16)
-                      : ""
-                  }
-                  onChange={(e) => updateDeadline(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded text-sm"
-                />
-              </div>
+              <input
+                type="datetime-local"
+                defaultValue={
+                  poolSettings?.entry_deadline
+                    ? new Date(poolSettings.entry_deadline).toISOString().slice(0, 16)
+                    : ""
+                }
+                onChange={(e) => updateDeadline(e.target.value)}
+                className="w-full sm:w-auto px-3 py-2 border border-gray-300 rounded text-sm"
+              />
               <p className="text-xs text-gray-400 mt-1">
                 Current:{" "}
                 {poolSettings?.entry_deadline
@@ -229,7 +238,6 @@ export default function AdminPage() {
             <h3 className="font-semibold text-[#006747] mb-2">Live Scores</h3>
             <p className="text-sm text-gray-500 mb-2">
               Scores auto-refresh every 60 seconds on the leaderboard.
-              You can also trigger a manual refresh here.
             </p>
             <button
               onClick={refreshScoresNow}
@@ -245,49 +253,53 @@ export default function AdminPage() {
       )}
 
       {/* Participants */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-        <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
-          <h3 className="font-semibold text-[#006747]">
-            Participants ({participants.length})
-          </h3>
+      {isCommissioner && (
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+          <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
+            <h3 className="font-semibold text-[#006747]">
+              Participants ({participants.length})
+            </h3>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-xs text-gray-500 uppercase border-b border-gray-200">
+                  <th className="px-4 py-2 text-left">Name</th>
+                  <th className="px-4 py-2 text-left hidden sm:table-cell">Email</th>
+                  <th className="px-4 py-2 text-center">Picks</th>
+                  <th className="px-4 py-2 text-center">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {participants.map((p) => (
+                  <tr key={p.id} className="border-b border-gray-100">
+                    <td className="px-4 py-2 font-medium">{p.display_name}</td>
+                    <td className="px-4 py-2 text-gray-500 hidden sm:table-cell">{p.email}</td>
+                    <td className="px-4 py-2 text-center">{p.pickCount}/6</td>
+                    <td className="px-4 py-2 text-center">
+                      {p.pickCount === 6 ? (
+                        <span className="text-green-600 font-semibold">Done</span>
+                      ) : (
+                        <span className="text-yellow-600">Pending</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+                {participants.length === 0 && (
+                  <tr>
+                    <td colSpan={4} className="px-4 py-6 text-center text-gray-400">
+                      No participants yet. Share the invite link!
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-xs text-gray-500 uppercase border-b border-gray-200">
-              <th className="px-4 py-2 text-left">Name</th>
-              <th className="px-4 py-2 text-left">Email</th>
-              <th className="px-4 py-2 text-center">Picks</th>
-              <th className="px-4 py-2 text-center">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {participants.map((p) => (
-              <tr key={p.id} className="border-b border-gray-100">
-                <td className="px-4 py-2 font-medium">{p.display_name}</td>
-                <td className="px-4 py-2 text-gray-500">{p.email}</td>
-                <td className="px-4 py-2 text-center">{p.pickCount}/6</td>
-                <td className="px-4 py-2 text-center">
-                  {p.pickCount === 6 ? (
-                    <span className="text-green-600 font-semibold">Done</span>
-                  ) : (
-                    <span className="text-yellow-600">Pending</span>
-                  )}
-                </td>
-              </tr>
-            ))}
-            {participants.length === 0 && (
-              <tr>
-                <td colSpan={4} className="px-4 py-6 text-center text-gray-400">
-                  No participants yet. Share the invite link!
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+      )}
 
       {message && (
-        <div className="fixed bottom-4 right-4 bg-[#006747] text-white px-4 py-2 rounded shadow-lg text-sm">
+        <div className="fixed bottom-4 right-4 left-4 sm:left-auto bg-[#006747] text-white px-4 py-2 rounded shadow-lg text-sm text-center sm:text-left">
           {message}
         </div>
       )}

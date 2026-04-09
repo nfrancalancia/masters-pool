@@ -1,16 +1,29 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [displayName, setDisplayName] = useState("");
-  const [step, setStep] = useState<"email" | "name">("email");
+  const [step, setStep] = useState<"loading" | "email" | "name">("loading");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
   const supabase = createClient();
+
+  // Check if already signed in
+  useEffect(() => {
+    async function checkAuth() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        window.location.href = "/picks";
+        return;
+      }
+      setStep("email");
+    }
+    checkAuth();
+  }, [supabase]);
 
   async function handleEmailSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -24,7 +37,6 @@ export default function LoginPage() {
     });
 
     if (!error) {
-      // Existing user — go straight in
       window.location.href = "/picks";
       return;
     }
@@ -71,6 +83,14 @@ export default function LoginPage() {
     window.location.href = "/picks";
   }
 
+  if (step === "loading") {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="animate-spin w-8 h-8 border-4 border-[#006747] border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-md mx-auto mt-8">
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -96,6 +116,7 @@ export default function LoginPage() {
                 placeholder="you@example.com"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#006747] focus:border-transparent"
                 required
+                autoFocus
               />
             </div>
 

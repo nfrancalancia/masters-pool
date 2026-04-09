@@ -4,6 +4,11 @@ import { useEffect, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { calculateLeaderboard, formatScore, type UserResult, type Golfer } from "@/lib/scoring";
 
+function golferImageUrl(espnId: string | null): string {
+  if (!espnId) return "";
+  return `https://a.espn.com/combiner/i?img=/i/headshots/golf/players/full/${espnId}.png&w=120&h=87`;
+}
+
 export default function LeaderboardPage() {
   const [leaderboard, setLeaderboard] = useState<UserResult[]>([]);
   const [loading, setLoading] = useState(true);
@@ -86,27 +91,28 @@ export default function LeaderboardPage() {
   return (
     <div>
       {/* Pool Status Banner */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6 flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-bold text-[#006747]">Pool Leaderboard</h2>
-          <p className="text-xs text-gray-500">
-            Pick 6 golfers (1 per tier) | Drop worst 2 | Lowest total wins
-          </p>
-        </div>
-        <div className="text-right text-xs text-gray-400">
-          <p>
-            Status:{" "}
-            <span className={`font-semibold ${tournamentState === "in" ? "text-green-600" : "text-gray-600"}`}>
-              {tournamentState === "pre" ? "Not Started" : tournamentState === "in" ? "LIVE" : "Final"}
-            </span>
-          </p>
-          {lastUpdated && <p>Updated: {lastUpdated}</p>}
-          <button
-            onClick={() => { refreshScores().then(() => loadLeaderboard()); }}
-            className="mt-1 text-[#006747] underline hover:no-underline"
-          >
-            Refresh
-          </button>
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-bold text-[#006747]">Pool Leaderboard</h2>
+            <p className="text-xs text-gray-500">
+              Pick 6 | Drop worst 2 | Lowest total wins
+            </p>
+          </div>
+          <div className="text-right text-xs text-gray-400">
+            <p>
+              <span className={`font-semibold ${tournamentState === "in" ? "text-green-600" : "text-gray-600"}`}>
+                {tournamentState === "pre" ? "Not Started" : tournamentState === "in" ? "LIVE" : "Final"}
+              </span>
+            </p>
+            {lastUpdated && <p>{lastUpdated}</p>}
+            <button
+              onClick={() => { refreshScores().then(() => loadLeaderboard()); }}
+              className="mt-1 text-[#006747] underline hover:no-underline"
+            >
+              Refresh
+            </button>
+          </div>
         </div>
       </div>
 
@@ -118,105 +124,145 @@ export default function LeaderboardPage() {
           </a>
         </div>
       ) : (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-[#006747] text-white text-xs uppercase tracking-wider">
-                <th className="px-4 py-3 text-left w-12">Rank</th>
-                <th className="px-4 py-3 text-left">Player</th>
-                <th className="px-4 py-3 text-center">Total</th>
-                <th className="px-4 py-3 text-center hidden sm:table-cell">Tiebreaker</th>
-                <th className="px-4 py-3 text-center w-8" />
-              </tr>
-            </thead>
-            <tbody>
-              {leaderboard.map((entry, i) => {
-                const isExpanded = expandedUser === entry.userId;
-                return (
-                  <tr
-                    key={entry.userId}
-                    className={`border-b border-gray-100 cursor-pointer hover:bg-green-50 transition-colors ${
-                      i === 0 ? "bg-yellow-50" : ""
-                    }`}
-                    onClick={() => setExpandedUser(isExpanded ? null : entry.userId)}
-                  >
-                    <td className="px-4 py-3 font-bold text-[#006747]">
-                      {entry.rank === 1 && i === 0 ? (
-                        <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-[#f2c75c] text-[#006747] text-xs font-bold">
-                          {entry.rank}
-                        </span>
-                      ) : (
-                        <span className="text-gray-600">{entry.rank}</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="font-semibold">{entry.displayName}</div>
-                      {isExpanded && (
-                        <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
-                          {entry.golferScores.map((gs) => (
-                            <div
-                              key={gs.tier}
-                              className={`rounded p-2 border text-xs ${
-                                gs.isDropped
-                                  ? "bg-gray-100 border-gray-200 dropped-golfer"
-                                  : gs.isMissedCut
-                                  ? "bg-red-50 border-red-200"
-                                  : "bg-white border-gray-200"
-                              }`}
-                            >
-                              <div className="flex items-center justify-between">
-                                <span className="text-gray-400 font-mono">T{gs.tier}</span>
-                                <span
-                                  className={`font-bold ${
-                                    gs.effectiveScore < 0
-                                      ? "score-negative"
-                                      : gs.effectiveScore > 0
-                                      ? "score-positive"
-                                      : "score-even"
-                                  }`}
-                                >
-                                  {formatScore(gs.effectiveScore)}
-                                </span>
-                              </div>
-                              <div className="font-semibold mt-0.5 truncate">{gs.golfer.name}</div>
-                              <div className="text-gray-400 mt-0.5">
-                                {gs.golfer.thru || "-"}{" "}
-                                {gs.isMissedCut && (
-                                  <span className="text-red-500 font-semibold uppercase">
-                                    {gs.golfer.status}
-                                  </span>
-                                )}
-                                {gs.isDropped && <span className="text-gray-400">(dropped)</span>}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-center font-bold text-lg align-top">
-                      <span
-                        className={
-                          entry.totalScore < 0
-                            ? "score-negative"
-                            : entry.totalScore > 0
-                            ? "score-positive"
-                            : "score-even"
-                        }
-                      >
-                        {formatScore(entry.totalScore)}
+        <div className="space-y-3">
+          {leaderboard.map((entry, i) => {
+            const isExpanded = expandedUser === entry.userId;
+            return (
+              <div
+                key={entry.userId}
+                className={`bg-white rounded-lg shadow-sm border overflow-hidden ${
+                  i === 0 ? "border-[#f2c75c] ring-1 ring-[#f2c75c]" : "border-gray-200"
+                }`}
+              >
+                {/* Main row — always visible */}
+                <button
+                  className="w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-green-50/50 transition-colors"
+                  onClick={() => setExpandedUser(isExpanded ? null : entry.userId)}
+                >
+                  {/* Rank */}
+                  <div className="flex-shrink-0 w-8">
+                    {entry.rank === 1 && i === 0 ? (
+                      <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-[#f2c75c] text-[#006747] text-sm font-bold">
+                        {entry.rank}
                       </span>
-                    </td>
-                    <td className="px-4 py-3 text-center text-gray-500 hidden sm:table-cell align-top">
-                      {entry.tiebreaker !== null ? entry.tiebreaker : "-"}
-                    </td>
-                    <td className="px-4 py-3 text-center text-gray-400 align-top">
-                      {isExpanded ? "\u25B2" : "\u25BC"}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                    ) : (
+                      <span className="inline-flex items-center justify-center w-8 h-8 text-gray-500 font-bold text-sm">
+                        {entry.rank}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Name */}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-gray-900 truncate">{entry.displayName}</p>
+                    <p className="text-xs text-gray-400">
+                      {entry.golferScores.filter(gs => !gs.isDropped).length} counting
+                      {entry.tiebreaker !== null && <span> | TB: {entry.tiebreaker}</span>}
+                    </p>
+                  </div>
+
+                  {/* Score */}
+                  <div className="flex-shrink-0 text-right">
+                    <span
+                      className={`text-xl font-bold ${
+                        entry.totalScore < 0
+                          ? "score-negative"
+                          : entry.totalScore > 0
+                          ? "score-positive"
+                          : "score-even"
+                      }`}
+                    >
+                      {formatScore(entry.totalScore)}
+                    </span>
+                  </div>
+
+                  {/* Expand arrow */}
+                  <div className="flex-shrink-0 text-gray-300">
+                    <svg
+                      className={`w-5 h-5 transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                      fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </button>
+
+                {/* Expanded golfer details */}
+                {isExpanded && (
+                  <div className="border-t border-gray-100 px-4 py-3 space-y-2 bg-gray-50/50">
+                    {entry.golferScores.map((gs) => (
+                      <div
+                        key={gs.tier}
+                        className={`flex items-center gap-3 p-2 rounded-lg ${
+                          gs.isDropped
+                            ? "opacity-40"
+                            : gs.isMissedCut
+                            ? "bg-red-50"
+                            : "bg-white"
+                        } ${gs.isDropped ? "" : "shadow-sm border border-gray-100"}`}
+                      >
+                        {/* Player image */}
+                        <div className="flex-shrink-0 w-12 h-12 rounded-full overflow-hidden bg-gray-200">
+                          {gs.golfer.espn_id ? (
+                            <img
+                              src={golferImageUrl(gs.golfer.espn_id)}
+                              alt={gs.golfer.name}
+                              className="w-full h-full object-cover object-top"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).style.display = "none";
+                              }}
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-gray-400 text-lg font-bold">
+                              {gs.golfer.name.charAt(0)}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Player info */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-sm truncate">{gs.golfer.name}</span>
+                            <span className="text-[10px] text-gray-400 font-mono flex-shrink-0">T{gs.tier}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
+                            {gs.golfer.thru && (
+                              <span>
+                                {gs.golfer.thru === "F" ? "Final" : `Thru ${gs.golfer.thru}`}
+                              </span>
+                            )}
+                            {gs.isMissedCut && (
+                              <span className="text-red-500 font-semibold uppercase">
+                                {gs.golfer.status === "cut" ? "MC" : gs.golfer.status}
+                              </span>
+                            )}
+                            {gs.isDropped && <span className="text-gray-400 italic">Dropped</span>}
+                          </div>
+                        </div>
+
+                        {/* Score */}
+                        <div className="flex-shrink-0">
+                          <span
+                            className={`text-base font-bold ${
+                              gs.isDropped
+                                ? "text-gray-400 line-through"
+                                : gs.effectiveScore < 0
+                                ? "score-negative"
+                                : gs.effectiveScore > 0
+                                ? "score-positive"
+                                : "score-even"
+                            }`}
+                          >
+                            {formatScore(gs.effectiveScore)}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
