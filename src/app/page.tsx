@@ -95,9 +95,22 @@ export default function LeaderboardPage() {
   }, [supabase]);
 
   useEffect(() => {
+    // Check if we're in tournament hours (Apr 9-12, 4am-7pm PST)
+    function isDuringTournament(): boolean {
+      const now = new Date();
+      if (now > new Date("2026-04-13T06:00:00Z")) return false;
+      const pstHour = (now.getUTCHours() - 7 + 24) % 24;
+      return pstHour >= 4 && pstHour < 19;
+    }
+
+    // Always load once on mount (uses cached DB data even if API is paused)
     refreshScores().then(() => loadLeaderboard());
+
+    // Only poll every 60s during tournament hours
     const interval = setInterval(() => {
-      refreshScores().then(() => loadLeaderboard());
+      if (isDuringTournament()) {
+        refreshScores().then(() => loadLeaderboard());
+      }
     }, 60000);
     return () => clearInterval(interval);
   }, [refreshScores, loadLeaderboard]);

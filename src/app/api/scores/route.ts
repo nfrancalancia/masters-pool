@@ -2,9 +2,37 @@ import { NextResponse } from "next/server";
 import { fetchMastersScores, mapESPNToGolferUpdate } from "@/lib/espn";
 import { createServiceClient } from "@/lib/supabase/server";
 
+// Check if we should fetch scores right now
+// Masters 2026: April 9-12, live coverage roughly 4am-7pm PST (11am-2am UTC next day)
+function shouldFetchScores(): boolean {
+  const now = new Date();
+
+  // Tournament is over after April 12, 2026 — no more fetches
+  const cutoff = new Date("2026-04-13T06:00:00Z"); // April 13 ~midnight PST with buffer
+  if (now > cutoff) return false;
+
+  // During tournament days, only fetch between 4am and 7pm PST
+  // PST = UTC-7 (April is PDT = UTC-7)
+  const pstHour = (now.getUTCHours() - 7 + 24) % 24;
+  if (pstHour < 4 || pstHour >= 19) return false; // before 4am or after 7pm PST
+
+  return true;
+}
+
 // GET /api/scores - Fetch latest scores from ESPN and update database
 export async function GET() {
   try {
+    if (!shouldFetchScores()) {
+      return NextResponse.json({
+        success: true,
+        updated: 0,
+        skipped: 0,
+        paused: true,
+        message: "Score fetching paused (outside tournament hours)",
+        timestamp: new Date().toISOString(),
+      });
+    }
+
     const espnData = await fetchMastersScores();
     if (!espnData) {
       return NextResponse.json(
