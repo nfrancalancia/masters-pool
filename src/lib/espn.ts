@@ -108,24 +108,8 @@ export function mapESPNToGolferUpdate(competitor: ESPNCompetitor) {
   else if (statusType.includes("WITHDRAW")) status = "wd";
   else if (statusType.includes("DQ")) status = "dq";
 
-  // Thru indicator — convert ET tee times to PST
-  let thru = competitor.status?.displayValue || "";
-  // ESPN returns tee times like "1:12 PM ET" — convert to PST (ET - 3hrs)
-  const teeTimeMatch = thru.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)\s*ET$/i);
-  if (teeTimeMatch) {
-    let hours = parseInt(teeTimeMatch[1]);
-    const minutes = teeTimeMatch[2];
-    const ampm = teeTimeMatch[3].toUpperCase();
-    // Convert to 24hr
-    if (ampm === "PM" && hours !== 12) hours += 12;
-    if (ampm === "AM" && hours === 12) hours = 0;
-    // ET to PST = -3 hours
-    hours = (hours - 3 + 24) % 24;
-    // Back to 12hr
-    const pstAmpm = hours >= 12 ? "PM" : "AM";
-    const pstHours = hours % 12 || 12;
-    thru = `${pstHours}:${minutes} ${pstAmpm}`;
-  }
+  // Thru indicator
+  const thru = competitor.status?.displayValue || "";
 
   // Position — use ESPN's order field for stable sorting
   const position = competitor.order?.toString() || "";
