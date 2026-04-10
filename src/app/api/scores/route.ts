@@ -67,21 +67,25 @@ export async function GET(request: Request) {
       if (dbId) {
         // Save current position as prev_position before overwriting
         const currentPos = dbIdToCurrentPos.get(dbId);
-        const { error } = await supabase
-          .from("golfers")
-          .update({
+        // Only overwrite thru if ESPN provides a value (preserve manual tee times)
+        const updateData: Record<string, any> = {
             total_score: update.total_score,
             round1: update.round1,
             round2: update.round2,
             round3: update.round3,
             round4: update.round4,
             status: update.status,
-            thru: update.thru,
             position: update.position,
             prev_position: currentPos || null,
             scorecard: update.scorecard,
             updated_at: update.updated_at,
-          })
+          };
+        if (update.thru) {
+          updateData.thru = update.thru;
+        }
+        const { error } = await supabase
+          .from("golfers")
+          .update(updateData)
           .eq("id", dbId);
 
         if (error) {
