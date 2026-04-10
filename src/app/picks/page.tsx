@@ -214,7 +214,7 @@ export default function PicksPage() {
                               )}
                               {golfer.total_score !== null && (
                                 <span className={`text-xs ${
-                                  golfer.total_score < 0 ? "score-negative" : "text-gray-500"
+                                  golfer.total_score < 0 ? "score-under-par" : golfer.total_score > 0 ? "score-over-par" : "text-gray-800"
                                 }`}>
                                   {golfer.total_score === 0 ? "E" : golfer.total_score > 0 ? `+${golfer.total_score}` : golfer.total_score}
                                   {golfer.status !== "active" && (

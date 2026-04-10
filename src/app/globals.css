@@ -25,12 +25,22 @@ body {
   font-weight: 700;
 }
 
+.score-under-par {
+  color: #1b5e20;
+  font-weight: 700;
+}
+
+.score-over-par {
+  color: #c62828;
+  font-weight: 700;
+}
+
 .score-positive {
   color: #1a1a1a;
 }
 
 .score-even {
-  color: #555;
+  color: #1a1a1a;
 }
 
 .dropped-golfer {

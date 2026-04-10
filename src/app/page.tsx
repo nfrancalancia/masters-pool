@@ -228,9 +228,9 @@ export default function LeaderboardPage() {
                         <span
                           className={`text-xl font-bold ${
                             entry.totalScore < 0
-                              ? "score-negative"
+                              ? "score-under-par"
                               : entry.totalScore > 0
-                              ? "score-positive"
+                              ? "score-over-par"
                               : "score-even"
                           }`}
                         >
@@ -299,8 +299,8 @@ export default function LeaderboardPage() {
                                 className={`text-base font-bold flex-shrink-0 ${
                                   gs.isDropped
                                     ? "text-gray-400 line-through"
-                                    : gs.effectiveScore < 0 ? "score-negative"
-                                    : gs.effectiveScore > 0 ? "score-positive"
+                                    : gs.effectiveScore < 0 ? "score-under-par"
+                                    : gs.effectiveScore > 0 ? "score-over-par"
                                     : "score-even"
                                 }`}
                               >
@@ -405,8 +405,8 @@ export default function LeaderboardPage() {
                     <span className="text-xs text-center text-gray-600 font-mono">{golfer.round4 ?? "-"}</span>
                     <span className="text-xs text-center text-gray-500">{golfer.thru || "-"}</span>
                     <span className={`text-sm font-bold text-right ${
-                      (golfer.total_score ?? 0) < 0 ? "score-negative"
-                      : (golfer.total_score ?? 0) > 0 ? "score-positive"
+                      (golfer.total_score ?? 0) < 0 ? "score-under-par"
+                      : (golfer.total_score ?? 0) > 0 ? "score-over-par"
                       : "score-even"
                     }`}>
                       {formatScore(golfer.total_score)}
@@ -434,8 +434,8 @@ export default function LeaderboardPage() {
                     </div>
                     <span className="w-8 text-[11px] text-center text-gray-500 flex-shrink-0">{golfer.thru || "-"}</span>
                     <span className={`w-10 text-sm font-bold text-right flex-shrink-0 ${
-                      (golfer.total_score ?? 0) < 0 ? "score-negative"
-                      : (golfer.total_score ?? 0) > 0 ? "score-positive"
+                      (golfer.total_score ?? 0) < 0 ? "score-under-par"
+                      : (golfer.total_score ?? 0) > 0 ? "score-over-par"
                       : "score-even"
                     }`}>
                       {formatScore(golfer.total_score)}
@@ -521,57 +521,32 @@ function InlineScorecard({
               </p>
               <div className="overflow-x-auto -mx-3 px-3">
                 {/* Front 9 */}
-                <div className="flex mb-0.5">
-                  <div className="flex-shrink-0 w-6 flex items-center justify-center text-[8px] text-gray-400 font-semibold">
-                    #
-                  </div>
-                  {round.holes.slice(0, 9).map((h) => (
-                    <div key={h.hole} className="flex-1 min-w-[1.75rem] text-center">
-                      <div className="text-[8px] text-gray-400 mb-0.5">{h.hole}</div>
-                      <div className={`text-xs font-bold font-mono rounded-sm mx-0.5 py-0.5 ${scoreColor(h.score)}`}>
-                        {h.strokes}
-                      </div>
-                    </div>
-                  ))}
-                  <div className="flex-shrink-0 w-8 text-center">
-                    <div className="text-[8px] text-gray-400 mb-0.5">Out</div>
-                    <div className="text-xs font-bold font-mono text-gray-700 py-0.5">
-                      {round.holes.slice(0, 9).reduce((s, h) => s + h.strokes, 0)}
-                    </div>
-                  </div>
-                </div>
+                <HoleRow holes={round.holes.slice(0, 9)} label="Out" />
                 {/* Back 9 */}
                 {round.holes.length > 9 && (
-                  <div className="flex">
-                    <div className="flex-shrink-0 w-6 flex items-center justify-center text-[8px] text-gray-400 font-semibold">
-                      #
-                    </div>
-                    {round.holes.slice(9, 18).map((h) => (
-                      <div key={h.hole} className="flex-1 min-w-[1.75rem] text-center">
-                        <div className="text-[8px] text-gray-400 mb-0.5">{h.hole}</div>
-                        <div className={`text-xs font-bold font-mono rounded-sm mx-0.5 py-0.5 ${scoreColor(h.score)}`}>
-                          {h.strokes}
-                        </div>
-                      </div>
-                    ))}
-                    <div className="flex-shrink-0 w-8 text-center">
-                      <div className="text-[8px] text-gray-400 mb-0.5">In</div>
-                      <div className="text-xs font-bold font-mono text-gray-700 py-0.5">
-                        {round.holes.slice(9, 18).reduce((s, h) => s + h.strokes, 0)}
-                      </div>
-                    </div>
-                  </div>
+                  <HoleRow holes={round.holes.slice(9, 18)} label="In" />
                 )}
               </div>
             </div>
           ))}
           {/* Legend */}
-          <div className="flex items-center gap-2 text-[9px] text-gray-400 pt-1">
-            <span className="flex items-center gap-0.5"><span className="w-2.5 h-2.5 rounded-sm bg-yellow-200 inline-block" /> Eagle+</span>
-            <span className="flex items-center gap-0.5"><span className="w-2.5 h-2.5 rounded-sm bg-red-100 inline-block" /> Birdie</span>
-            <span className="flex items-center gap-0.5"><span className="w-2.5 h-2.5 rounded-sm bg-white border border-gray-200 inline-block" /> Par</span>
-            <span className="flex items-center gap-0.5"><span className="w-2.5 h-2.5 rounded-sm bg-blue-100 inline-block" /> Bogey</span>
-            <span className="flex items-center gap-0.5"><span className="w-2.5 h-2.5 rounded-sm bg-blue-200 inline-block" /> Dbl+</span>
+          <div className="flex items-center gap-2 text-[9px] text-gray-400 pt-1 flex-wrap">
+            <span className="flex items-center gap-1">
+              <span className="inline-flex items-center justify-center w-4 h-4 rounded-full border-2 border-green-600 text-[7px] font-bold text-green-700">3</span>
+              Birdie
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="inline-flex items-center justify-center w-5 h-5 rounded-full border-2 border-yellow-500 text-[7px] font-bold text-yellow-700"><span className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full border border-yellow-500 text-[7px]">2</span></span>
+              Eagle
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="inline-flex items-center justify-center w-4 h-4 border-2 border-red-500 text-[7px] font-bold text-red-600">5</span>
+              Bogey
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="inline-flex items-center justify-center w-5 h-5 border-2 border-red-700 text-[7px] font-bold text-red-700"><span className="inline-flex items-center justify-center w-3.5 h-3.5 border border-red-700 text-[7px]">6</span></span>
+              Dbl Bogey+
+            </span>
           </div>
         </div>
       )}
@@ -585,10 +560,75 @@ function InlineScorecard({
   );
 }
 
-function scoreColor(score: number): string {
-  if (score <= -2) return "bg-yellow-200 text-yellow-900";
-  if (score === -1) return "bg-red-100 text-red-700";
-  if (score === 0) return "bg-white text-gray-600";
-  if (score === 1) return "bg-blue-100 text-blue-700";
-  return "bg-blue-200 text-blue-900";
+/** A row of 9 holes with Out/In total */
+function HoleRow({ holes, label }: { holes: Array<{ hole: number; strokes: number; par: number; score: number }>; label: string }) {
+  return (
+    <div className="flex mb-0.5 items-end">
+      <div className="flex-shrink-0 w-5 flex items-center justify-center text-[8px] text-gray-400 font-semibold">
+        #
+      </div>
+      {holes.map((h) => (
+        <div key={h.hole} className="flex-1 min-w-[1.75rem] flex flex-col items-center">
+          <div className="text-[8px] text-gray-400 mb-0.5">{h.hole}</div>
+          <HoleScore strokes={h.strokes} score={h.score} />
+        </div>
+      ))}
+      <div className="flex-shrink-0 w-8 text-center">
+        <div className="text-[8px] text-gray-400 mb-0.5">{label}</div>
+        <div className="text-xs font-bold font-mono text-gray-700 py-0.5">
+          {holes.reduce((s, h) => s + h.strokes, 0)}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Single hole score with golf notation: circle=birdie, 2x circle=eagle, square=bogey, 2x square=dbl bogey */
+function HoleScore({ strokes, score }: { strokes: number; score: number }) {
+  // Par
+  if (score === 0) {
+    return (
+      <div className="w-6 h-6 flex items-center justify-center">
+        <span className="text-xs font-bold font-mono text-gray-800">{strokes}</span>
+      </div>
+    );
+  }
+
+  // Birdie (-1): single circle, green
+  if (score === -1) {
+    return (
+      <div className="w-6 h-6 flex items-center justify-center rounded-full border-2 border-green-600">
+        <span className="text-[11px] font-bold font-mono text-green-700">{strokes}</span>
+      </div>
+    );
+  }
+
+  // Eagle or better (-2 or less): double circle, gold/green
+  if (score <= -2) {
+    return (
+      <div className="w-7 h-7 flex items-center justify-center rounded-full border-2 border-yellow-500">
+        <div className="w-5 h-5 flex items-center justify-center rounded-full border-[1.5px] border-yellow-500">
+          <span className="text-[10px] font-bold font-mono text-yellow-700">{strokes}</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Bogey (+1): single square, red
+  if (score === 1) {
+    return (
+      <div className="w-6 h-6 flex items-center justify-center border-2 border-red-500">
+        <span className="text-[11px] font-bold font-mono text-red-600">{strokes}</span>
+      </div>
+    );
+  }
+
+  // Double bogey or worse (+2 or more): double square, dark red
+  return (
+    <div className="w-7 h-7 flex items-center justify-center border-2 border-red-700">
+      <div className="w-5 h-5 flex items-center justify-center border-[1.5px] border-red-700">
+        <span className="text-[10px] font-bold font-mono text-red-700">{strokes}</span>
+      </div>
+    </div>
+  );
 }
