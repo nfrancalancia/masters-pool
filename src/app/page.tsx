@@ -154,20 +154,31 @@ export default function LeaderboardPage() {
     fieldRank[golfer.id] = i + 1;
   });
 
-  // Compute previous ranks from prev_position (ESPN order before last update)
-  // Sort by prev_position to get old ordering, then assign old ranks
-  const prevRank: Record<number, number> = {};
-  const hasPrevPositions = golfers.some((g) => g.prev_position !== null);
-  if (hasPrevPositions) {
-    const prevSorted = [...golfers].sort((a, b) => {
-      const aPos = a.prev_position ? parseInt(a.prev_position) : 999;
-      const bPos = b.prev_position ? parseInt(b.prev_position) : 999;
-      return aPos - bPos;
-    });
-    prevSorted.forEach((g, i) => {
-      if (g.prev_position) prevRank[g.id] = i + 1;
-    });
-  }
+  // Compute "today" score: current round's score relative to par from scorecard
+  const todayScore: Record<number, number | null> = {};
+  golfers.forEach((g) => {
+    if (!g.scorecard || !g.scorecard.rounds || g.scorecard.rounds.length === 0) {
+      todayScore[g.id] = null;
+      return;
+    }
+    // Find the latest round with holes played
+    const latestRound = g.scorecard.rounds
+      .filter((r) => r.holes && r.holes.length > 0)
+      .sort((a, b) => b.round - a.round)[0];
+    if (!latestRound) {
+      todayScore[g.id] = null;
+      return;
+    }
+    // Only show "today" for the current in-progress round (not completed R1)
+    const isComplete = latestRound.holes.length >= 18;
+    // Check if there's a higher round number (meaning this round is done and next hasn't started)
+    const highestRoundNum = Math.max(...g.scorecard.rounds.map((r) => r.round));
+    if (isComplete && latestRound.round < highestRoundNum) {
+      todayScore[g.id] = null; // Between rounds
+    } else {
+      todayScore[g.id] = latestRound.holes.reduce((s, h) => s + (h.score ?? 0), 0);
+    }
+  });
 
   if (loading) {
     return (
@@ -374,6 +385,7 @@ export default function LeaderboardPage() {
                 <div className="flex-shrink-0 w-6 mr-1"></div>
                 <div className="flex-1 min-w-0 pr-1 py-2 text-[10px] text-gray-500 font-semibold uppercase">Player</div>
                 <div className="flex-shrink-0 w-9 text-center py-2 text-[10px] text-gray-500 font-semibold uppercase">Tot</div>
+                <div className="flex-shrink-0 w-9 text-center py-2 text-[10px] text-gray-500 font-semibold uppercase">Today</div>
                 <div className="flex-shrink-0 w-12 text-center py-2 text-[10px] text-gray-500 font-semibold uppercase">Thru</div>
                 <div className="flex-shrink-0 w-7 text-center py-2 text-[10px] text-gray-500 font-semibold uppercase">R1</div>
                 <div className="flex-shrink-0 w-7 text-center py-2 text-[10px] text-gray-500 font-semibold uppercase">R2</div>
@@ -387,10 +399,10 @@ export default function LeaderboardPage() {
                 {sortedField.map((golfer, i) => {
                   const isCut = golfer.status === "cut" || golfer.status === "wd" || golfer.status === "dq";
                   const isExpanded = expandedGolferId === golfer.id;
-                  // Movement: compare previous rank to current rank
-                  const curR = fieldRank[golfer.id];
-                  const prvR = prevRank[golfer.id];
-                  const movement = prvR !== undefined ? prvR - curR : null;
+                  // Movement: compare R1 final position (prev_position) to current position in sorted list
+                  const curRank = i + 1;
+                  const prevPos = golfer.prev_position ? parseInt(golfer.prev_position) : null;
+                  const movement = prevPos !== null && !isNaN(prevPos) ? prevPos - curRank : null;
 
                   return (
                     <div key={golfer.id} className={isCut && !isExpanded ? "opacity-50" : ""}>
@@ -429,6 +441,9 @@ export default function LeaderboardPage() {
                         </div>
                         <div className={`flex-shrink-0 w-9 text-center text-sm font-bold ${totalScoreClass(golfer.total_score ?? 0)}`}>
                           {golfer.total_score === 0 && !golfer.round1 ? "-" : formatScore(golfer.total_score)}
+                        </div>
+                        <div className={`flex-shrink-0 w-9 text-center text-[11px] font-semibold ${todayScore[golfer.id] !== null ? totalScoreClass(todayScore[golfer.id]!) : "text-gray-400"}`}>
+                          {todayScore[golfer.id] !== null ? formatScore(todayScore[golfer.id]!) : "-"}
                         </div>
                         <div className={`flex-shrink-0 w-12 text-center text-[10px] ${golfer.thru?.includes(":") ? "text-gray-400" : "text-gray-500"}`}>{golfer.thru || "-"}</div>
                         <div className="flex-shrink-0 w-7 text-center text-[11px] text-gray-600 font-mono">{golfer.round1 ?? "-"}</div>

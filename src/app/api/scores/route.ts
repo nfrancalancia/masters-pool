@@ -45,16 +45,18 @@ export async function GET(request: Request) {
 
     const supabase = createServiceClient();
 
-    // Get existing golfers to match by ESPN ID (also grab current position for movement tracking)
+    // Get existing golfers to match by ESPN ID (also grab current position and prev for movement tracking)
     const { data: existingGolfers } = await supabase
       .from("golfers")
-      .select("id, espn_id, position");
+      .select("id, espn_id, position, prev_position");
 
     const espnIdToDbId = new Map<string, number>();
     const dbIdToCurrentPos = new Map<number, string>();
+    const dbIdHasPrevPos = new Map<number, boolean>();
     (existingGolfers || []).forEach((g: any) => {
       if (g.espn_id) espnIdToDbId.set(g.espn_id, g.id);
       if (g.position) dbIdToCurrentPos.set(g.id, g.position);
+      dbIdHasPrevPos.set(g.id, !!g.prev_position);
     });
 
     let updated = 0;
@@ -65,8 +67,8 @@ export async function GET(request: Request) {
       const dbId = espnIdToDbId.get(update.espn_id);
 
       if (dbId) {
-        // Save current position as prev_position before overwriting
         const currentPos = dbIdToCurrentPos.get(dbId);
+        const hasPrev = dbIdHasPrevPos.get(dbId);
         // Only overwrite thru if ESPN provides a value (preserve manual tee times)
         const updateData: Record<string, any> = {
             total_score: update.total_score,
@@ -76,10 +78,13 @@ export async function GET(request: Request) {
             round4: update.round4,
             status: update.status,
             position: update.position,
-            prev_position: currentPos || null,
             scorecard: update.scorecard,
             updated_at: update.updated_at,
           };
+        // Only set prev_position once (R1 final positions stick for R2 movement)
+        if (!hasPrev && currentPos) {
+          updateData.prev_position = currentPos;
+        }
         if (update.thru) {
           updateData.thru = update.thru;
         }
