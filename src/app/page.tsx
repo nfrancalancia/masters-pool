@@ -428,7 +428,7 @@ export default function LeaderboardPage() {
                           )}
                         </div>
                         <div className={`flex-shrink-0 w-9 text-center text-sm font-bold ${totalScoreClass(golfer.total_score ?? 0)}`}>
-                          {formatScore(golfer.total_score)}
+                          {golfer.total_score === 0 && !golfer.round1 ? "-" : formatScore(golfer.total_score)}
                         </div>
                         <div className={`flex-shrink-0 w-12 text-center text-[10px] ${golfer.thru?.includes(":") ? "text-gray-400" : "text-gray-500"}`}>{golfer.thru || "-"}</div>
                         <div className="flex-shrink-0 w-7 text-center text-[11px] text-gray-600 font-mono">{golfer.round1 ?? "-"}</div>
@@ -567,6 +567,11 @@ function InlineScorecard({
               <p className={`text-base font-bold font-mono ${isActive ? "text-[#006747]" : "text-gray-900"}`}>
                 {rv.value === null ? "-" : inProgress ? formatScore(rv.value) : rv.value}
               </p>
+              {rv.value !== null && !inProgress && (
+                <p className={`text-[9px] font-mono ${isActive ? "text-[#006747]/70" : "text-gray-400"}`}>
+                  ({formatScore(rv.value - 72)})
+                </p>
+              )}
             </button>
           );
         })}
