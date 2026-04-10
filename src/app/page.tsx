@@ -123,30 +123,25 @@ export default function LeaderboardPage() {
     setScorecardLoading(false);
   }
 
-  // Sort golfers by total score for field view, then compute tied positions
+  // Sort golfers using ESPN's sortOrder for stable, deterministic ordering
+  // (sortOrder encodes ESPN's full tiebreaking: current round, hole-by-hole, etc.)
   const sortedField = [...golfers].sort((a, b) => {
-    // Active players first, then cut/wd/dq
-    const aOut = a.status === "cut" || a.status === "wd" || a.status === "dq";
-    const bOut = b.status === "cut" || b.status === "wd" || b.status === "dq";
-    if (aOut !== bOut) return aOut ? 1 : -1;
-    // Sort by total score (lowest first), nulls last
-    const aScore = a.total_score ?? 999;
-    const bScore = b.total_score ?? 999;
-    return aScore - bScore;
+    const aPos = a.position ? parseInt(a.position) : 999;
+    const bPos = b.position ? parseInt(b.position) : 999;
+    return aPos - bPos;
   });
 
-  // Compute standard golf positions with ties (T1, T1, 3, T4, T4, T4, 7, ...)
+  // Compute display positions with ties from total_score (T1, T1, 3, T4, ...)
   const fieldPositions: Record<number, string> = {};
-  sortedField.forEach((golfer, i) => {
+  sortedField.forEach((golfer) => {
     if (golfer.total_score === null) {
       fieldPositions[golfer.id] = "-";
       return;
     }
-    // Find first index with same score
     const firstIdx = sortedField.findIndex((g) => g.total_score === golfer.total_score);
-    const lastIdx = sortedField.filter((g) => g.total_score === golfer.total_score).length;
+    const tiedCount = sortedField.filter((g) => g.total_score === golfer.total_score).length;
     const pos = firstIdx + 1;
-    fieldPositions[golfer.id] = lastIdx > 1 ? `T${pos}` : `${pos}`;
+    fieldPositions[golfer.id] = tiedCount > 1 ? `T${pos}` : `${pos}`;
   });
 
   if (loading) {
