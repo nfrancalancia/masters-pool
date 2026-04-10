@@ -169,12 +169,10 @@ export default function LeaderboardPage() {
       todayScore[g.id] = null;
       return;
     }
-    // Only show "today" for the current in-progress round (not completed R1)
+    // Only show "today" for in-progress rounds (not finished ones)
     const isComplete = latestRound.holes.length >= 18;
-    // Check if there's a higher round number (meaning this round is done and next hasn't started)
-    const highestRoundNum = Math.max(...g.scorecard.rounds.map((r) => r.round));
-    if (isComplete && latestRound.round < highestRoundNum) {
-      todayScore[g.id] = null; // Between rounds
+    if (isComplete) {
+      todayScore[g.id] = null; // Round is done, no "today"
     } else {
       todayScore[g.id] = latestRound.holes.reduce((s, h) => s + (h.score ?? 0), 0);
     }
@@ -399,10 +397,10 @@ export default function LeaderboardPage() {
                 {sortedField.map((golfer, i) => {
                   const isCut = golfer.status === "cut" || golfer.status === "wd" || golfer.status === "dq";
                   const isExpanded = expandedGolferId === golfer.id;
-                  // Movement: compare R1 final position (prev_position) to current position in sorted list
-                  const curRank = i + 1;
+                  // Movement: compare R1 final ESPN order (prev_position) to current ESPN order (position)
+                  const curPos = golfer.position ? parseInt(golfer.position) : null;
                   const prevPos = golfer.prev_position ? parseInt(golfer.prev_position) : null;
-                  const movement = prevPos !== null && !isNaN(prevPos) ? prevPos - curRank : null;
+                  const movement = curPos !== null && prevPos !== null && !isNaN(curPos) && !isNaN(prevPos) ? prevPos - curPos : null;
 
                   return (
                     <div key={golfer.id} className={isCut && !isExpanded ? "opacity-50" : ""}>
