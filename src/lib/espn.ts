@@ -117,16 +117,20 @@ export function mapESPNToGolferUpdate(competitor: ESPNCompetitor) {
   else if (statusType.includes("DQ")) status = "dq";
 
   // Thru indicator — ESPN doesn't provide status on competitors,
-  // so compute from scorecard: find latest round with holes played
+  // so compute from scorecard using the highest round number
   let thru = competitor.status?.displayValue || "";
   if (!thru) {
-    // Find the latest round that has hole-by-hole data
-    const latestRoundWithHoles = rounds
-      .filter((r: any) => r.linescores && r.linescores.length > 0)
-      .sort((a: any, b: any) => b.period - a.period)[0];
-    if (latestRoundWithHoles) {
-      const holesPlayed = latestRoundWithHoles.linescores?.length ?? 0;
-      thru = holesPlayed >= 18 ? "F" : `${holesPlayed}`;
+    // Find the highest round number in linescores (the current/latest round)
+    const highestRound = rounds.length > 0
+      ? rounds.reduce((max: any, r: any) => r.period > max.period ? r : max, rounds[0])
+      : null;
+    if (highestRound) {
+      const holesPlayed = highestRound.linescores?.length ?? 0;
+      if (holesPlayed > 0) {
+        // Player has started this round
+        thru = holesPlayed >= 18 ? "F" : `${holesPlayed}`;
+      }
+      // If 0 holes played on the latest round, don't set thru — preserve tee time
     }
   }
 
