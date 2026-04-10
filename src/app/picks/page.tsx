@@ -13,10 +13,7 @@ interface Golfer {
   odds: string | null;
 }
 
-function golferImageUrl(espnId: string | null): string {
-  if (!espnId) return "";
-  return `https://a.espncdn.com/i/headshots/golf/players/full/${espnId}.png`;
-}
+import { golferImageUrl } from "@/lib/golfer-images";
 
 interface PoolSettings {
   id: number;

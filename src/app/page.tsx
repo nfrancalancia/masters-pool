@@ -3,11 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { calculateLeaderboard, formatScore, type UserResult, type Golfer } from "@/lib/scoring";
-
-function golferImageUrl(espnId: string | null): string {
-  if (!espnId) return "";
-  return `https://a.espncdn.com/i/headshots/golf/players/full/${espnId}.png`;
-}
+import { golferImageUrl } from "@/lib/golfer-images";
 
 export default function LeaderboardPage() {
   const [leaderboard, setLeaderboard] = useState<UserResult[]>([]);
