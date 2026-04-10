@@ -92,7 +92,7 @@ export async function fetchMastersScores(): Promise<{
 
 export function mapESPNToGolferUpdate(competitor: ESPNCompetitor) {
   const score = competitor.score;
-  const totalScore = score === "E" ? 0 : parseInt(score, 10) || null;
+  const espnTotalScore = score === "E" ? 0 : parseInt(score, 10) || null;
 
   // Extract per-round scores — only set when round is complete (18 holes)
   const rounds = competitor.linescores || [];
@@ -161,6 +161,15 @@ export function mapESPNToGolferUpdate(competitor: ESPNCompetitor) {
         };
       }),
   };
+
+  // Compute total_score from actual hole-by-hole data when available
+  // ESPN's score field can be stale while scorecard data updates in real-time
+  let totalScore = espnTotalScore;
+  if (scorecard.rounds.length > 0) {
+    totalScore = scorecard.rounds.reduce((total, round) => {
+      return total + round.holes.reduce((s: number, h: any) => s + h.score, 0);
+    }, 0);
+  }
 
   return {
     espn_id: competitor.athlete?.id || competitor.id,

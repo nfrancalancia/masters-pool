@@ -397,10 +397,10 @@ export default function LeaderboardPage() {
                 {sortedField.map((golfer, i) => {
                   const isCut = golfer.status === "cut" || golfer.status === "wd" || golfer.status === "dq";
                   const isExpanded = expandedGolferId === golfer.id;
-                  // Movement: compare R1 final ESPN order (prev_position) to current ESPN order (position)
-                  const curPos = golfer.position ? parseInt(golfer.position) : null;
+                  // Movement: compare R1 final position (prev_position) to current computed rank
+                  const curPos = fieldRank[golfer.id] ?? null;
                   const prevPos = golfer.prev_position ? parseInt(golfer.prev_position) : null;
-                  const movement = curPos !== null && prevPos !== null && !isNaN(curPos) && !isNaN(prevPos) ? prevPos - curPos : null;
+                  const movement = curPos !== null && prevPos !== null && !isNaN(prevPos) ? prevPos - curPos : null;
 
                   return (
                     <div key={golfer.id} className={isCut && !isExpanded ? "opacity-50" : ""}>
