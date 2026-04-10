@@ -408,16 +408,16 @@ export default function LeaderboardPage() {
             <div className="min-w-[420px]">
               {/* Column headers */}
               <div className="flex items-center bg-gray-50 border-b border-gray-200">
-                <div className="flex-shrink-0 w-5 pl-0.5 py-2 text-[10px] text-gray-500 font-semibold uppercase">#</div>
-                <div className="flex-shrink-0 w-5 mr-0.5"></div>
-                <div className="flex-1 min-w-0 pr-1 py-2 text-[10px] text-gray-500 font-semibold uppercase">Player</div>
-                <div className="flex-shrink-0 w-8 text-center py-2 text-[10px] text-gray-500 font-semibold uppercase">Tot</div>
-                <div className="flex-shrink-0 w-8 text-center py-2 text-[10px] text-gray-500 font-semibold uppercase">Tdy</div>
-                <div className="flex-shrink-0 w-10 text-center py-2 text-[10px] text-gray-500 font-semibold uppercase">Thru</div>
-                <div className="flex-shrink-0 w-7 text-center py-2 text-[10px] text-gray-500 font-semibold uppercase">R1</div>
-                <div className="flex-shrink-0 w-7 text-center py-2 text-[10px] text-gray-500 font-semibold uppercase">R2</div>
-                <div className="flex-shrink-0 w-6 text-center py-2 text-[10px] text-gray-500 font-semibold uppercase">R3</div>
-                <div className="flex-shrink-0 w-6 text-center py-2 text-[10px] text-gray-500 font-semibold uppercase">R4</div>
+                <div className="flex-shrink-0 w-6 pl-1 py-2.5 text-[10px] text-gray-500 font-semibold uppercase">#</div>
+                <div className="flex-shrink-0 w-6 mr-1"></div>
+                <div className="flex-1 min-w-0 pr-1 py-2.5 text-[10px] text-gray-500 font-semibold uppercase">Player</div>
+                <div className="flex-shrink-0 w-8 text-center py-2.5 text-[10px] text-gray-500 font-semibold uppercase">Tot</div>
+                <div className="flex-shrink-0 w-8 text-center py-2.5 text-[10px] text-gray-500 font-semibold uppercase">Tdy</div>
+                <div className="flex-shrink-0 w-10 text-center py-2.5 text-[10px] text-gray-500 font-semibold uppercase">Thru</div>
+                <div className="flex-shrink-0 w-7 text-center py-2.5 text-[10px] text-gray-500 font-semibold uppercase">R1</div>
+                <div className="flex-shrink-0 w-7 text-center py-2.5 text-[10px] text-gray-500 font-semibold uppercase">R2</div>
+                <div className="flex-shrink-0 w-6 text-center py-2.5 text-[10px] text-gray-500 font-semibold uppercase">R3</div>
+                <div className="flex-shrink-0 w-6 text-center py-2.5 text-[10px] text-gray-500 font-semibold uppercase">R4</div>
                 <div className="flex-shrink-0 w-4"></div>
               </div>
 
@@ -458,12 +458,12 @@ export default function LeaderboardPage() {
                       {/* Row */}
                       <button
                         onClick={() => toggleGolferExpand(golfer)}
-                        className="w-full flex items-center py-2 text-left hover:bg-green-50/50 transition-colors"
+                        className="w-full flex items-center py-2.5 text-left hover:bg-green-50/50 transition-colors"
                       >
-                        <div className="flex-shrink-0 w-5 pl-0.5 text-[10px] font-bold text-gray-500">
+                        <div className="flex-shrink-0 w-6 pl-1 text-[11px] font-bold text-gray-500">
                           {fieldPositions[golfer.id] || (i + 1)}
                         </div>
-                        <div className="flex-shrink-0 w-5 h-5 rounded-full overflow-hidden bg-gray-200 mr-0.5">
+                        <div className="flex-shrink-0 w-6 h-6 rounded-full overflow-hidden bg-gray-200 mr-1">
                           {golfer.espn_id ? (
                             <img
                               src={golferImageUrl(golfer.espn_id)}
@@ -479,7 +479,7 @@ export default function LeaderboardPage() {
                         </div>
                         <div className="flex-1 min-w-0 pr-1">
                           <div className="flex items-center gap-0.5">
-                            <p className="text-[11px] sm:text-sm font-semibold truncate">{golfer.name}</p>
+                            <p className="text-xs sm:text-sm font-semibold truncate">{golfer.name}</p>
                             <MovementArrow movement={movement} />
                           </div>
                           {isCut && (
@@ -491,14 +491,14 @@ export default function LeaderboardPage() {
                         <div className={`flex-shrink-0 w-8 text-center text-sm font-bold ${totalScoreClass(golfer.total_score ?? 0)}`}>
                           {golfer.total_score === 0 && !golfer.round1 ? "-" : formatScore(golfer.total_score)}
                         </div>
-                        <div className={`flex-shrink-0 w-8 text-center text-[11px] font-semibold ${todayScore[golfer.id] !== null ? totalScoreClass(todayScore[golfer.id]!) : "text-gray-400"}`}>
+                        <div className={`flex-shrink-0 w-8 text-center text-xs font-semibold ${todayScore[golfer.id] !== null ? totalScoreClass(todayScore[golfer.id]!) : "text-gray-400"}`}>
                           {todayScore[golfer.id] !== null ? formatScore(todayScore[golfer.id]!) : "-"}
                         </div>
-                        <div className={`flex-shrink-0 w-10 text-center text-[10px] ${golfer.thru?.includes(":") ? "text-gray-400" : "text-gray-500"}`}>{golfer.thru || "-"}</div>
-                        <div className="flex-shrink-0 w-7 text-center text-[11px] text-gray-600 font-mono">{golfer.round1 ?? "-"}</div>
-                        <div className="flex-shrink-0 w-7 text-center text-[11px] text-gray-600 font-mono">{golfer.round2 ?? "-"}</div>
-                        <div className="flex-shrink-0 w-6 text-center text-[11px] text-gray-600 font-mono">{golfer.round3 ?? "-"}</div>
-                        <div className="flex-shrink-0 w-6 text-center text-[11px] text-gray-600 font-mono">{golfer.round4 ?? "-"}</div>
+                        <div className={`flex-shrink-0 w-10 text-center text-[11px] ${golfer.thru?.includes(":") ? "text-gray-400" : "text-gray-500"}`}>{golfer.thru || "-"}</div>
+                        <div className="flex-shrink-0 w-7 text-center text-xs text-gray-600 font-mono">{golfer.round1 ?? "-"}</div>
+                        <div className="flex-shrink-0 w-7 text-center text-xs text-gray-600 font-mono">{golfer.round2 ?? "-"}</div>
+                        <div className="flex-shrink-0 w-6 text-center text-xs text-gray-600 font-mono">{golfer.round3 ?? "-"}</div>
+                        <div className="flex-shrink-0 w-6 text-center text-xs text-gray-600 font-mono">{golfer.round4 ?? "-"}</div>
                         <div className="flex-shrink-0 w-4 pr-1">
                           <svg
                             className={`w-4 h-4 text-gray-300 transition-transform ${isExpanded ? "rotate-180" : ""}`}
@@ -543,7 +543,7 @@ function MovementArrow({ movement }: { movement: number | null }) {
 
   if (movement > 0) {
     return (
-      <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-green-600 flex-shrink-0">
+      <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-green-600 flex-shrink-0">
         <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 10 10">
           <path d="M5 1L9 6H1L5 1Z" />
         </svg>
@@ -553,7 +553,7 @@ function MovementArrow({ movement }: { movement: number | null }) {
   }
 
   return (
-    <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-red-500 flex-shrink-0">
+    <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-red-500 flex-shrink-0">
       <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 10 10">
         <path d="M5 9L1 4H9L5 9Z" />
       </svg>
@@ -611,9 +611,9 @@ function InlineScorecard({
   const totalStrokes = playedHoles.reduce((s, h) => s + (h.strokes ?? 0), 0);
 
   return (
-    <div className="border-t border-gray-100 bg-gray-50/80 px-3 py-3">
+    <div className="border-t border-gray-100 bg-gray-50/80 px-2.5 py-2.5">
       {/* Clickable round tiles */}
-      <div className="grid grid-cols-4 gap-1.5 mb-3">
+      <div className="grid grid-cols-4 gap-1 mb-2.5">
         {roundValues.map((rv) => {
           const isActive = selectedRound === rv.num;
           const hasData = scorecard?.rounds.some((r) => r.round === rv.num && r.holes && r.holes.length > 0);
@@ -622,18 +622,18 @@ function InlineScorecard({
             <button
               key={rv.num}
               onClick={() => onSelectRound(rv.num)}
-              className={`rounded-md p-2 text-center border transition-colors ${
+              className={`rounded-md p-1.5 text-center border transition-colors ${
                 isActive
                   ? "border-[#006747] bg-[#006747]/5 ring-1 ring-[#006747]"
                   : "border-gray-100 bg-white hover:border-gray-300"
               } ${hasData ? "cursor-pointer" : ""}`}
             >
-              <p className={`text-[9px] uppercase font-semibold ${isActive ? "text-[#006747]" : "text-gray-400"}`}>R{rv.num}</p>
-              <p className={`text-base font-bold font-mono ${isActive ? "text-[#006747]" : "text-gray-900"}`}>
+              <p className={`text-[8px] uppercase font-semibold ${isActive ? "text-[#006747]" : "text-gray-400"}`}>R{rv.num}</p>
+              <p className={`text-sm font-bold font-mono ${isActive ? "text-[#006747]" : "text-gray-900"}`}>
                 {rv.value === null ? "-" : inProgress ? formatScore(rv.value) : rv.value}
               </p>
               {rv.value !== null && !inProgress && (
-                <p className={`text-[9px] font-mono ${isActive ? "text-[#006747]/70" : "text-gray-400"}`}>
+                <p className={`text-[8px] font-mono ${isActive ? "text-[#006747]/70" : "text-gray-400"}`}>
                   ({formatScore(rv.value - 72)})
                 </p>
               )}
@@ -652,41 +652,41 @@ function InlineScorecard({
       {/* Hole-by-hole scorecard — always show all 18 holes */}
       {selectedRound !== null && (
         <div>
-          <div className="overflow-x-auto -mx-3 px-3 pb-1">
+          <div className="overflow-x-auto -mx-2.5 px-2.5 pb-1">
             <table className="min-w-max border-collapse">
               <thead>
                 <tr>
-                  <td className="w-10 pr-1 py-0.5 text-[9px] text-gray-400 font-semibold text-right">Hole</td>
+                  <td className="w-9 pr-0.5 py-0.5 text-[8px] text-gray-400 font-semibold text-right">Hole</td>
                   {fullHoles.map((h) => (
-                    <td key={h.hole} className="w-7 py-0.5 text-center text-[9px] text-gray-400 font-semibold">{h.hole}</td>
+                    <td key={h.hole} className="w-6 py-0.5 text-center text-[8px] text-gray-400 font-semibold">{h.hole}</td>
                   ))}
-                  <td className="w-8 py-0.5 text-center text-[9px] text-gray-500 font-bold border-l border-gray-200 pl-1">Tot</td>
+                  <td className="w-7 py-0.5 text-center text-[8px] text-gray-500 font-bold border-l border-gray-200 pl-0.5">Tot</td>
                 </tr>
                 <tr>
-                  <td className="w-10 pr-1 py-0.5 text-[9px] text-gray-400 font-semibold text-right">Par</td>
+                  <td className="w-9 pr-0.5 py-0.5 text-[8px] text-gray-400 font-semibold text-right">Par</td>
                   {fullHoles.map((h) => (
-                    <td key={h.hole} className="w-7 py-0.5 text-center text-[10px] text-gray-500 font-mono">{h.par}</td>
+                    <td key={h.hole} className="w-6 py-0.5 text-center text-[9px] text-gray-500 font-mono">{h.par}</td>
                   ))}
-                  <td className="w-8 py-0.5 text-center text-[10px] text-gray-500 font-mono font-bold border-l border-gray-200 pl-1">
+                  <td className="w-7 py-0.5 text-center text-[9px] text-gray-500 font-mono font-bold border-l border-gray-200 pl-0.5">
                     72
                   </td>
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  <td className="w-10 pr-1 py-0.5 text-[9px] text-gray-400 font-semibold text-right">Score</td>
+                  <td className="w-9 pr-0.5 py-0.5 text-[8px] text-gray-400 font-semibold text-right">Score</td>
                   {fullHoles.map((h) => (
-                    <td key={h.hole} className="w-7 py-0.5">
+                    <td key={h.hole} className="w-6 py-0.5">
                       <div className="flex items-center justify-center">
                         {h.strokes !== null ? (
                           <HoleScore strokes={h.strokes} score={h.score!} />
                         ) : (
-                          <span className="text-[10px] text-gray-300 font-mono">-</span>
+                          <span className="text-[9px] text-gray-300 font-mono">-</span>
                         )}
                       </div>
                     </td>
                   ))}
-                  <td className="w-8 py-0.5 text-center font-mono font-bold text-sm border-l border-gray-200 pl-1">
+                  <td className="w-7 py-0.5 text-center font-mono font-bold text-xs border-l border-gray-200 pl-0.5">
                     {playedHoles.length > 0 ? totalStrokes : "-"}
                   </td>
                 </tr>
@@ -695,24 +695,24 @@ function InlineScorecard({
           </div>
           {/* Legend */}
           {playedHoles.length > 0 && (
-            <div className="flex items-center gap-2 text-[9px] text-gray-400 pt-2 flex-wrap">
-              <span className="flex items-center gap-1">
-                <span className="inline-flex items-center justify-center w-4 h-4 rounded-full border-2 border-green-600 text-[7px] font-bold text-green-700">3</span>
+            <div className="flex items-center gap-2 text-[8px] text-gray-400 pt-1.5 flex-wrap">
+              <span className="flex items-center gap-0.5">
+                <span className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full border-[1.5px] border-green-600 text-[6px] font-bold text-green-700">3</span>
                 Birdie
               </span>
-              <span className="flex items-center gap-1">
-                <span className="inline-flex items-center justify-center w-[18px] h-[18px] rounded-full border-2 border-yellow-500">
-                  <span className="inline-flex items-center justify-center w-3 h-3 rounded-full border border-yellow-500 text-[6px] font-bold text-yellow-700">2</span>
+              <span className="flex items-center gap-0.5">
+                <span className="inline-flex items-center justify-center w-4 h-4 rounded-full border-[1.5px] border-yellow-500">
+                  <span className="inline-flex items-center justify-center w-2.5 h-2.5 rounded-full border border-yellow-500 text-[5px] font-bold text-yellow-700">2</span>
                 </span>
                 Eagle
               </span>
-              <span className="flex items-center gap-1">
-                <span className="inline-flex items-center justify-center w-4 h-4 border-2 border-red-500 text-[7px] font-bold text-red-600">5</span>
+              <span className="flex items-center gap-0.5">
+                <span className="inline-flex items-center justify-center w-3.5 h-3.5 border-[1.5px] border-red-500 text-[6px] font-bold text-red-600">5</span>
                 Bogey
               </span>
-              <span className="flex items-center gap-1">
-                <span className="inline-flex items-center justify-center w-[18px] h-[18px] border-2 border-red-700">
-                  <span className="inline-flex items-center justify-center w-3 h-3 border border-red-700 text-[6px] font-bold text-red-700">6</span>
+              <span className="flex items-center gap-0.5">
+                <span className="inline-flex items-center justify-center w-4 h-4 border-[1.5px] border-red-700">
+                  <span className="inline-flex items-center justify-center w-2.5 h-2.5 border border-red-700 text-[5px] font-bold text-red-700">6</span>
                 </span>
                 Dbl+
               </span>
@@ -733,22 +733,22 @@ function InlineScorecard({
 /** Single hole score with golf notation */
 function HoleScore({ strokes, score }: { strokes: number; score: number }) {
   if (score === 0) {
-    return <span className="text-[11px] font-bold font-mono text-gray-800">{strokes}</span>;
+    return <span className="text-[10px] font-bold font-mono text-gray-800">{strokes}</span>;
   }
 
   if (score === -1) {
     return (
-      <div className="w-5 h-5 flex items-center justify-center rounded-full border-2 border-green-600">
-        <span className="text-[10px] font-bold font-mono text-green-700">{strokes}</span>
+      <div className="w-[18px] h-[18px] flex items-center justify-center rounded-full border-[1.5px] border-green-600">
+        <span className="text-[9px] font-bold font-mono text-green-700">{strokes}</span>
       </div>
     );
   }
 
   if (score <= -2) {
     return (
-      <div className="w-6 h-6 flex items-center justify-center rounded-full border-2 border-yellow-500">
-        <div className="w-4 h-4 flex items-center justify-center rounded-full border-[1.5px] border-yellow-500">
-          <span className="text-[8px] font-bold font-mono text-yellow-700">{strokes}</span>
+      <div className="w-[22px] h-[22px] flex items-center justify-center rounded-full border-[1.5px] border-yellow-500">
+        <div className="w-[14px] h-[14px] flex items-center justify-center rounded-full border border-yellow-500">
+          <span className="text-[7px] font-bold font-mono text-yellow-700">{strokes}</span>
         </div>
       </div>
     );
@@ -756,16 +756,16 @@ function HoleScore({ strokes, score }: { strokes: number; score: number }) {
 
   if (score === 1) {
     return (
-      <div className="w-5 h-5 flex items-center justify-center border-2 border-red-500">
-        <span className="text-[10px] font-bold font-mono text-red-600">{strokes}</span>
+      <div className="w-[18px] h-[18px] flex items-center justify-center border-[1.5px] border-red-500">
+        <span className="text-[9px] font-bold font-mono text-red-600">{strokes}</span>
       </div>
     );
   }
 
   return (
-    <div className="w-6 h-6 flex items-center justify-center border-2 border-red-700">
-      <div className="w-4 h-4 flex items-center justify-center border-[1.5px] border-red-700">
-        <span className="text-[8px] font-bold font-mono text-red-700">{strokes}</span>
+    <div className="w-[22px] h-[22px] flex items-center justify-center border-[1.5px] border-red-700">
+      <div className="w-[14px] h-[14px] flex items-center justify-center border border-red-700">
+        <span className="text-[7px] font-bold font-mono text-red-700">{strokes}</span>
       </div>
     </div>
   );
