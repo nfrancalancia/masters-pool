@@ -6,9 +6,15 @@ import { createClient } from "@/lib/supabase/client";
 interface Golfer {
   id: number;
   name: string;
+  espn_id: string | null;
   tier: number;
   total_score: number | null;
   status: string;
+}
+
+function golferImageUrl(espnId: string | null): string {
+  if (!espnId) return "";
+  return `https://a.espncdn.com/i/headshots/golf/players/full/${espnId}.png`;
 }
 
 interface PoolSettings {
@@ -176,23 +182,42 @@ export default function PicksPage() {
                               [tierNum]: isSelected ? 0 : golfer.id,
                             }))
                           }
-                          className={`text-left p-2 rounded border text-sm transition-all ${
+                          className={`text-left p-2 rounded-lg border text-sm transition-all flex items-center gap-2 ${
                             isSelected
                               ? "border-[#006747] bg-green-50 ring-2 ring-[#006747]"
                               : "border-gray-200 hover:border-gray-400"
                           } ${isLocked ? "opacity-60 cursor-not-allowed" : "cursor-pointer"}`}
                         >
-                          <div className="font-semibold truncate">{golfer.name}</div>
-                          {golfer.total_score !== null && (
-                            <div className={`text-xs mt-0.5 ${
-                              golfer.total_score < 0 ? "score-negative" : "text-gray-500"
-                            }`}>
-                              {golfer.total_score === 0 ? "E" : golfer.total_score > 0 ? `+${golfer.total_score}` : golfer.total_score}
-                              {golfer.status !== "active" && (
-                                <span className="ml-1 text-red-500 uppercase">{golfer.status}</span>
-                              )}
-                            </div>
-                          )}
+                          <div className="flex-shrink-0 w-10 h-10 rounded-full overflow-hidden bg-gray-100">
+                            {golfer.espn_id ? (
+                              <img
+                                src={golferImageUrl(golfer.espn_id)}
+                                alt={golfer.name}
+                                className="w-full h-full object-cover object-top"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).style.display = "none";
+                                  (e.target as HTMLImageElement).parentElement!.innerHTML = `<div class="w-full h-full flex items-center justify-center text-gray-400 text-sm font-bold">${golfer.name.charAt(0)}</div>`;
+                                }}
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-gray-400 text-sm font-bold">
+                                {golfer.name.charAt(0)}
+                              </div>
+                            )}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="font-semibold truncate text-xs">{golfer.name}</div>
+                            {golfer.total_score !== null && (
+                              <div className={`text-xs mt-0.5 ${
+                                golfer.total_score < 0 ? "score-negative" : "text-gray-500"
+                              }`}>
+                                {golfer.total_score === 0 ? "E" : golfer.total_score > 0 ? `+${golfer.total_score}` : golfer.total_score}
+                                {golfer.status !== "active" && (
+                                  <span className="ml-1 text-red-500 uppercase">{golfer.status}</span>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         </button>
                       );
                     })}

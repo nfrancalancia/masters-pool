@@ -6,7 +6,7 @@ import { calculateLeaderboard, formatScore, type UserResult, type Golfer } from 
 
 function golferImageUrl(espnId: string | null): string {
   if (!espnId) return "";
-  return `https://a.espn.com/combiner/i?img=/i/headshots/golf/players/full/${espnId}.png&w=120&h=87`;
+  return `https://a.espncdn.com/i/headshots/golf/players/full/${espnId}.png`;
 }
 
 export default function LeaderboardPage() {
