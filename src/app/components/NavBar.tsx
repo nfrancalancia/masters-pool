@@ -7,6 +7,7 @@ export default function NavBar() {
   const [user, setUser] = useState<any>(null);
   const [displayName, setDisplayName] = useState<string>("");
   const [isCommissioner, setIsCommissioner] = useState(false);
+  const [commissionerUnclaimed, setCommissionerUnclaimed] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -17,16 +18,25 @@ export default function NavBar() {
       const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
 
+      const { data: settings } = await supabase
+        .from("pool_settings")
+        .select("commissioner_id")
+        .limit(1);
+
+      const commissionerId = settings?.[0]?.commissioner_id;
+      setCommissionerUnclaimed(!commissionerId);
+
       if (user) {
-        const [{ data: profile }, { data: settings }] = await Promise.all([
-          supabase.from("profiles").select("display_name, is_commissioner").eq("id", user.id).single(),
-          supabase.from("pool_settings").select("commissioner_id").limit(1),
-        ]);
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("display_name, is_commissioner")
+          .eq("id", user.id)
+          .single();
 
         if (profile) {
           setDisplayName(profile.display_name);
           setIsCommissioner(
-            profile.is_commissioner || settings?.[0]?.commissioner_id === user.id
+            profile.is_commissioner || commissionerId === user.id
           );
         }
       }
@@ -39,6 +49,11 @@ export default function NavBar() {
     await supabase.auth.signOut();
     window.location.href = "/";
   }
+
+  // Show Admin if commissioner OR if role is unclaimed and user is logged in
+  const showAdmin = isCommissioner || (commissionerUnclaimed && !!user);
+  // Show Info for logged-in non-commissioners when commissioner is claimed
+  const showInfo = !!user && !isCommissioner && !commissionerUnclaimed;
 
   return (
     <header className="masters-gradient text-white shadow-lg">
@@ -57,7 +72,10 @@ export default function NavBar() {
         <nav className="hidden sm:flex items-center gap-4 text-sm">
           <a href="/" className="hover:text-[#f2c75c] transition-colors">Leaderboard</a>
           <a href="/picks" className="hover:text-[#f2c75c] transition-colors">My Picks</a>
-          {isCommissioner && (
+          {showInfo && (
+            <a href="/info" className="hover:text-[#f2c75c] transition-colors">Info</a>
+          )}
+          {showAdmin && (
             <a href="/admin" className="hover:text-[#f2c75c] transition-colors">Admin</a>
           )}
           {loading ? null : user ? (
@@ -130,7 +148,12 @@ export default function NavBar() {
             <a href="/picks" className="block py-2.5 text-base font-semibold hover:text-[#f2c75c]">
               My Picks
             </a>
-            {isCommissioner && (
+            {showInfo && (
+              <a href="/info" className="block py-2.5 text-base font-semibold hover:text-[#f2c75c]">
+                Info
+              </a>
+            )}
+            {showAdmin && (
               <a href="/admin" className="block py-2.5 text-base font-semibold hover:text-[#f2c75c]">
                 Admin
               </a>
