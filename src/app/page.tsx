@@ -431,8 +431,30 @@ export default function LeaderboardPage() {
                   const prevRank = prevRoundRank[golfer.id] ?? null;
                   const movement = curRank !== null && prevRank !== null ? prevRank - curRank : null;
 
+                  // Cut line: show between last player at cutScore and first player above it
+                  const CUT_SCORE = 4; // +4 projected cut
+                  const anyCut = sortedField.some((g) => g.status === "cut");
+                  const prevScore = i > 0 ? sortedField[i - 1].total_score : null;
+                  const showCutLine = !anyCut
+                    ? (golfer.total_score !== null && golfer.total_score > CUT_SCORE && (prevScore === null || prevScore <= CUT_SCORE))
+                    : (isCut && (i === 0 || sortedField[i - 1].status !== "cut" && sortedField[i - 1].status !== "wd" && sortedField[i - 1].status !== "dq"));
+
+                  const belowCut = !anyCut
+                    ? (golfer.total_score !== null && golfer.total_score > CUT_SCORE)
+                    : isCut;
+
                   return (
-                    <div key={golfer.id} className={isCut && !isExpanded ? "opacity-50" : ""}>
+                    <div key={golfer.id}>
+                      {showCutLine && (
+                        <div className="flex items-center gap-2 px-3 py-1.5 bg-red-50/80">
+                          <div className="flex-1 border-t border-dashed border-red-300" />
+                          <span className="text-[10px] font-semibold text-red-400 uppercase tracking-wide whitespace-nowrap">
+                            {anyCut ? "Cut Line" : `Projected Cut ${formatScore(CUT_SCORE)}`}
+                          </span>
+                          <div className="flex-1 border-t border-dashed border-red-300" />
+                        </div>
+                      )}
+                      <div className={belowCut && !isExpanded ? "opacity-50" : ""}>
                       {/* Row */}
                       <button
                         onClick={() => toggleGolferExpand(golfer)}
@@ -496,6 +518,7 @@ export default function LeaderboardPage() {
                           onSelectRound={setSelectedRound}
                         />
                       )}
+                      </div>
                     </div>
                   );
                 })}
