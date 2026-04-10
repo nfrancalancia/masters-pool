@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { calculateLeaderboard, formatScore, type UserResult, type Golfer, type ScorecardData } from "@/lib/scoring";
@@ -160,6 +160,34 @@ export default function LeaderboardPage() {
     fieldRank[golfer.id] = i + 1;
   });
 
+  // Track rank changes between refreshes for highlight animations
+  const prevFieldRankRef = useRef<Record<number, number>>({});
+  const [rankChange, setRankChange] = useState<Record<number, "up" | "down" | null>>({});
+  const fieldRankKey = sortedField.map((g) => g.id).join(",");
+
+  useEffect(() => {
+    const prev = prevFieldRankRef.current;
+    if (Object.keys(prev).length > 0) {
+      const changes: Record<number, "up" | "down" | null> = {};
+      let hasChange = false;
+      Object.entries(fieldRank).forEach(([idStr, rank]) => {
+        const id = parseInt(idStr);
+        const prevRank = prev[id];
+        if (prevRank !== undefined && prevRank !== rank) {
+          changes[id] = rank < prevRank ? "up" : "down";
+          hasChange = true;
+        }
+      });
+      if (hasChange) {
+        setRankChange(changes);
+        const timer = setTimeout(() => setRankChange({}), 2500);
+        return () => clearTimeout(timer);
+      }
+    }
+    prevFieldRankRef.current = { ...fieldRank };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fieldRankKey]);
+
   // Determine current tournament round from scorecard data
   let currentRound = 1;
   golfers.forEach((g) => {
@@ -291,7 +319,7 @@ export default function LeaderboardPage() {
                   <motion.div
                     key={entry.userId}
                     layout
-                    transition={{ type: "spring", stiffness: 500, damping: 40, mass: 0.8 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 30, mass: 1 }}
                     className={`bg-white rounded-lg shadow-sm border overflow-hidden ${
                       i === 0 ? "border-[#f2c75c] ring-1 ring-[#f2c75c]" : "border-gray-200"
                     }`}
@@ -451,11 +479,19 @@ export default function LeaderboardPage() {
                     ? (golfer.total_score !== null && golfer.total_score > CUT_SCORE)
                     : isCut);
 
+                  const change = rankChange[golfer.id];
+                  const changeBorder = change === "up"
+                    ? "border-l-2 border-l-green-500"
+                    : change === "down"
+                    ? "border-l-2 border-l-red-500"
+                    : "";
+
                   return (
                     <motion.div
                       key={golfer.id}
                       layout
-                      transition={{ type: "spring", stiffness: 500, damping: 40, mass: 0.8 }}
+                      transition={{ type: "spring", stiffness: 300, damping: 30, mass: 1 }}
+                      className={`${changeBorder} transition-colors duration-1000`}
                     >
                       {showCutLine && (
                         <div className="flex items-center gap-2 px-3 py-1.5 bg-red-50/80">
