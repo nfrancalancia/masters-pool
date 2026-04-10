@@ -57,7 +57,7 @@ export default function VerifyImagesPage() {
   }
 
   const tiers = [1, 2, 3, 4, 5, 6];
-  const flaggedCount = new Set([...flagged, ...broken]).size;
+  const flaggedCount = new Set([...Array.from(flagged), ...Array.from(broken)]).size;
 
   return (
     <div className="space-y-6">
