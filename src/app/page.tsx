@@ -154,44 +154,57 @@ export default function LeaderboardPage() {
     fieldRank[golfer.id] = i + 1;
   });
 
-  // Compute R1 final rankings from round1 scores (for movement arrows)
-  const r1Rank: Record<number, number> = {};
-  const golfersWithR1 = [...golfers]
-    .filter((g) => g.round1 !== null && g.round1 !== undefined)
-    .sort((a, b) => {
-      // Sort by round1 strokes ascending (lower is better)
-      if (a.round1! !== b.round1!) return a.round1! - b.round1!;
-      // Tiebreaker: ESPN position for stable ordering
-      const aPos = a.position ? parseInt(a.position) : 999;
-      const bPos = b.position ? parseInt(b.position) : 999;
-      return aPos - bPos;
-    });
-  golfersWithR1.forEach((golfer, i) => {
-    r1Rank[golfer.id] = i + 1;
+  // Determine current tournament round from scorecard data
+  let currentRound = 1;
+  golfers.forEach((g) => {
+    if (g.scorecard?.rounds) {
+      g.scorecard.rounds.forEach((r) => {
+        if (r.holes && r.holes.length > 0 && r.round > currentRound) {
+          currentRound = r.round;
+        }
+      });
+    }
   });
 
+  // Compute previous round's final rankings for movement arrows
+  // During R2: compare to R1 rankings. During R3: compare to R2 rankings, etc.
+  const prevRoundRank: Record<number, number> = {};
+  if (currentRound > 1) {
+    const roundScores: { id: number; cumulative: number; espnPos: number }[] = [];
+    golfers.forEach((g) => {
+      // Sum strokes through the previous round
+      const roundFields = [g.round1, g.round2, g.round3, g.round4];
+      let cumulative = 0;
+      let hasAll = true;
+      for (let r = 0; r < currentRound - 1; r++) {
+        if (roundFields[r] === null || roundFields[r] === undefined) { hasAll = false; break; }
+        cumulative += (roundFields[r]! - 72); // score to par per round
+      }
+      if (hasAll) {
+        roundScores.push({ id: g.id, cumulative, espnPos: g.position ? parseInt(g.position) : 999 });
+      }
+    });
+    roundScores.sort((a, b) => a.cumulative !== b.cumulative ? a.cumulative - b.cumulative : a.espnPos - b.espnPos);
+    roundScores.forEach((g, i) => { prevRoundRank[g.id] = i + 1; });
+  }
+
   // Compute "today" score: current round's score relative to par from scorecard
+  // Shows score for today's round (complete or in-progress), "-" if player hasn't started
   const todayScore: Record<number, number | null> = {};
   golfers.forEach((g) => {
     if (!g.scorecard || !g.scorecard.rounds || g.scorecard.rounds.length === 0) {
       todayScore[g.id] = null;
       return;
     }
-    // Find the latest round with holes played
-    const latestRound = g.scorecard.rounds
-      .filter((r) => r.holes && r.holes.length > 0)
-      .sort((a, b) => b.round - a.round)[0];
-    if (!latestRound) {
-      todayScore[g.id] = null;
+    // Find data for the current tournament round
+    const currentRoundData = g.scorecard.rounds.find(
+      (r) => r.round === currentRound && r.holes && r.holes.length > 0
+    );
+    if (!currentRoundData) {
+      todayScore[g.id] = null; // Player hasn't started today's round
       return;
     }
-    // Only show "today" for in-progress rounds (not finished ones)
-    const isComplete = latestRound.holes.length >= 18;
-    if (isComplete) {
-      todayScore[g.id] = null; // Round is done, no "today"
-    } else {
-      todayScore[g.id] = latestRound.holes.reduce((s, h) => s + (h.score ?? 0), 0);
-    }
+    todayScore[g.id] = currentRoundData.holes.reduce((s, h) => s + (h.score ?? 0), 0);
   });
 
   if (loading) {
@@ -413,9 +426,9 @@ export default function LeaderboardPage() {
                 {sortedField.map((golfer, i) => {
                   const isCut = golfer.status === "cut" || golfer.status === "wd" || golfer.status === "dq";
                   const isExpanded = expandedGolferId === golfer.id;
-                  // Movement: compare R1 final rank (computed from round1 scores) to current rank
+                  // Movement: compare previous round's final rank to current rank
                   const curRank = fieldRank[golfer.id] ?? null;
-                  const prevRank = r1Rank[golfer.id] ?? null;
+                  const prevRank = prevRoundRank[golfer.id] ?? null;
                   const movement = curRank !== null && prevRank !== null ? prevRank - curRank : null;
 
                   return (
