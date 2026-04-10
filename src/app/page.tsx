@@ -425,27 +425,23 @@ export default function LeaderboardPage() {
                           </svg>
                         </div>
                       </button>
+
+                      {/* Scorecard inline below the row */}
+                      {isExpanded && (
+                        <InlineScorecard
+                          golfer={golfer}
+                          scorecard={scorecard}
+                          loading={scorecardLoading}
+                          selectedRound={selectedRound}
+                          onSelectRound={setSelectedRound}
+                        />
+                      )}
                     </div>
                   );
                 })}
               </div>
             </div>
           </div>
-
-          {/* Expanded scorecard — rendered outside the scroll container */}
-          {expandedGolferId && (() => {
-            const golfer = golfers.find((g) => g.id === expandedGolferId);
-            if (!golfer) return null;
-            return (
-              <InlineScorecard
-                golfer={golfer}
-                scorecard={scorecard}
-                loading={scorecardLoading}
-                selectedRound={selectedRound}
-                onSelectRound={setSelectedRound}
-              />
-            );
-          })()}
         </div>
       )}
     </div>
