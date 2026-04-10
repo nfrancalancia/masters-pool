@@ -318,7 +318,7 @@ export default function LeaderboardPage() {
                 return (
                   <motion.div
                     key={entry.userId}
-                    layout
+                    layout="position"
                     transition={{ type: "spring", stiffness: 300, damping: 30, mass: 1 }}
                     className={`bg-white rounded-lg shadow-sm border overflow-hidden ${
                       i === 0 ? "border-[#f2c75c] ring-1 ring-[#f2c75c]" : "border-gray-200"
@@ -489,7 +489,7 @@ export default function LeaderboardPage() {
                   return (
                     <motion.div
                       key={golfer.id}
-                      layout
+                      layout="position"
                       transition={{ type: "spring", stiffness: 300, damping: 30, mass: 1 }}
                       className={`${changeBorder} transition-colors duration-1000`}
                     >
