@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const MASTERS_EVENT_ID = "401811941";
+const ESPN_BASE = "https://site.api.espn.com/apis/site/v2/sports/golf/pga";
 
 // GET /api/scorecard?espnId=1234
-// Fetches hole-by-hole scorecard from ESPN for a specific golfer
+// Fetches hole-by-hole scorecard from ESPN scoreboard data
 export async function GET(request: NextRequest) {
   const espnId = request.nextUrl.searchParams.get("espnId");
   if (!espnId) {
@@ -11,11 +12,9 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // ESPN summary endpoint contains full scorecard data
-    const res = await fetch(
-      `https://site.api.espn.com/apis/site/v2/sports/golf/pga/summary?event=${MASTERS_EVENT_ID}`,
-      { next: { revalidate: 120 } }
-    );
+    const res = await fetch(`${ESPN_BASE}/scoreboard`, {
+      next: { revalidate: 60 },
+    });
 
     if (!res.ok) {
       return NextResponse.json({ error: "ESPN API error" }, { status: 502 });
@@ -23,10 +22,15 @@ export async function GET(request: NextRequest) {
 
     const data = await res.json();
 
-    // Find the competitor in the data
-    const competitors = data?.competitions?.[0]?.competitors ||
-      data?.events?.[0]?.competitions?.[0]?.competitors || [];
+    const events = data?.events || [];
+    const masters = events.find(
+      (e: any) => e.id === MASTERS_EVENT_ID || e.name?.includes("Masters")
+    );
+    if (!masters) {
+      return NextResponse.json({ error: "Masters not found" }, { status: 404 });
+    }
 
+    const competitors = masters.competitions?.[0]?.competitors || [];
     const competitor = competitors.find(
       (c: any) => c.athlete?.id === espnId || c.id === espnId
     );
@@ -35,38 +39,41 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Player not found" }, { status: 404 });
     }
 
-    // Extract scorecard / linescores
-    const rounds = (competitor.linescores || []).map((ls: any) => ({
-      round: ls.period,
-      strokes: ls.value,
-      displayValue: ls.displayValue,
-    }));
+    // Parse hole-by-hole from nested linescores
+    const rounds = (competitor.linescores || [])
+      .filter((ls: any) => ls.linescores && ls.linescores.length > 0)
+      .map((ls: any) => {
+        const holes = ls.linescores.map((h: any) => {
+          const strokes = Math.round(h.value);
+          const scoreDisplay = h.scoreType?.displayValue || "E";
 
-    // Try to get hole-by-hole from scorecard if available
-    const scorecard = competitor.scorecard || competitor.statistics || null;
-    let holes: any[] = [];
+          // Derive par and score-to-par from scoreType
+          let scoreToPar = 0;
+          if (scoreDisplay === "E") {
+            scoreToPar = 0;
+          } else if (scoreDisplay.startsWith("-")) {
+            scoreToPar = parseInt(scoreDisplay);
+          } else if (scoreDisplay.startsWith("+")) {
+            scoreToPar = parseInt(scoreDisplay);
+          }
 
-    if (scorecard?.rounds) {
-      holes = scorecard.rounds.map((round: any) => ({
-        round: round.period || round.roundNumber,
-        holes: (round.linescores || round.holes || []).map((h: any) => ({
-          hole: h.period || h.number,
-          strokes: h.value,
-          par: h.par,
-          score: h.score, // relative to par
-        })),
-      }));
-    }
+          return {
+            hole: h.period,
+            strokes,
+            par: strokes - scoreToPar,
+            score: scoreToPar,
+          };
+        });
 
-    return NextResponse.json({
-      name: competitor.athlete?.displayName || "Unknown",
-      position: competitor.sortOrder || competitor.status?.position?.id,
-      score: competitor.score,
-      rounds,
-      holes,
-      status: competitor.status?.type?.name || "active",
-      thru: competitor.status?.displayValue || "",
-    });
+        return {
+          round: ls.period,
+          strokes: Math.round(ls.value),
+          displayValue: ls.displayValue,
+          holes,
+        };
+      });
+
+    return NextResponse.json({ rounds });
   } catch (err) {
     console.error("Scorecard fetch error:", err);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });

@@ -8,9 +8,10 @@ import { golferImageUrl } from "@/lib/golfer-images";
 type Tab = "pool" | "field";
 
 interface ScorecardData {
-  rounds: Array<{ round: number; strokes: number; displayValue: string }>;
-  holes: Array<{
+  rounds: Array<{
     round: number;
+    strokes: number;
+    displayValue: string;
     holes: Array<{ hole: number; strokes: number; par: number; score: number }>;
   }>;
 }
@@ -415,39 +416,23 @@ export default function LeaderboardPage() {
                   {/* Row — mobile */}
                   <button
                     onClick={() => toggleGolferExpand(golfer)}
-                    className="sm:hidden w-full flex items-center px-3 py-2.5 text-left hover:bg-green-50/50 transition-colors"
+                    className="sm:hidden w-full flex items-center px-3 py-2 text-left hover:bg-green-50/50 transition-colors"
                   >
-                    <span className="w-8 text-xs font-bold text-gray-500 flex-shrink-0">
+                    <span className="w-7 text-xs font-bold text-gray-500 flex-shrink-0">
                       {golfer.position || (i + 1)}
                     </span>
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <div className="flex-shrink-0 w-7 h-7 rounded-full overflow-hidden bg-gray-200">
-                        {golfer.espn_id ? (
-                          <img
-                            src={golferImageUrl(golfer.espn_id)}
-                            alt={golfer.name}
-                            className="w-full h-full object-cover object-top"
-                            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-gray-400 text-[10px] font-bold">
-                            {golfer.name.charAt(0)}
-                          </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[13px] font-semibold truncate">{golfer.name}</p>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] text-gray-400 font-mono">T{golfer.tier}</span>
+                        {isCut && (
+                          <span className="text-[10px] text-red-500 font-semibold uppercase">
+                            {golfer.status === "cut" ? "MC" : golfer.status}
+                          </span>
                         )}
                       </div>
-                      <div className="min-w-0">
-                        <p className="text-sm font-semibold truncate">{golfer.name}</p>
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-[10px] text-gray-400 font-mono">T{golfer.tier}</span>
-                          {isCut && (
-                            <span className="text-[10px] text-red-500 font-semibold uppercase">
-                              {golfer.status === "cut" ? "MC" : golfer.status}
-                            </span>
-                          )}
-                        </div>
-                      </div>
                     </div>
-                    <span className="w-10 text-xs text-center text-gray-500 flex-shrink-0">{golfer.thru || "-"}</span>
+                    <span className="w-8 text-[11px] text-center text-gray-500 flex-shrink-0">{golfer.thru || "-"}</span>
                     <span className={`w-10 text-sm font-bold text-right flex-shrink-0 ${
                       (golfer.total_score ?? 0) < 0 ? "score-negative"
                       : (golfer.total_score ?? 0) > 0 ? "score-positive"
@@ -455,6 +440,12 @@ export default function LeaderboardPage() {
                     }`}>
                       {formatScore(golfer.total_score)}
                     </span>
+                    <svg
+                      className={`w-4 h-4 ml-1 text-gray-300 flex-shrink-0 transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                      fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
                   </button>
 
                   {/* Inline expanded scorecard */}
@@ -486,6 +477,7 @@ function InlineScorecard({
   loading: boolean;
 }) {
   const isCut = golfer.status === "cut" || golfer.status === "wd" || golfer.status === "dq";
+  const hasHoles = scorecard && scorecard.rounds.some((r) => r.holes && r.holes.length > 0);
 
   return (
     <div className="border-t border-gray-100 bg-gray-50/80 px-3 py-3">
@@ -518,11 +510,15 @@ function InlineScorecard({
         </div>
       )}
 
-      {scorecard && scorecard.holes.length > 0 && (
+      {hasHoles && (
         <div className="space-y-2">
-          {scorecard.holes.map((round) => (
+          {scorecard!.rounds
+            .filter((r) => r.holes && r.holes.length > 0)
+            .map((round) => (
             <div key={round.round}>
-              <p className="text-[10px] font-semibold text-[#006747] mb-1">Round {round.round}</p>
+              <p className="text-[10px] font-semibold text-[#006747] mb-1">
+                Round {round.round} ({round.strokes})
+              </p>
               <div className="overflow-x-auto -mx-3 px-3">
                 {/* Front 9 */}
                 <div className="flex mb-0.5">
@@ -530,20 +526,9 @@ function InlineScorecard({
                     #
                   </div>
                   {round.holes.slice(0, 9).map((h) => (
-                    <div
-                      key={h.hole}
-                      className="flex-1 min-w-[1.75rem] text-center"
-                    >
+                    <div key={h.hole} className="flex-1 min-w-[1.75rem] text-center">
                       <div className="text-[8px] text-gray-400 mb-0.5">{h.hole}</div>
-                      <div
-                        className={`text-xs font-bold font-mono rounded-sm mx-0.5 py-0.5 ${
-                          h.score <= -2 ? "bg-yellow-200 text-yellow-900"
-                          : h.score === -1 ? "bg-red-100 text-red-700"
-                          : h.score === 0 ? "bg-white text-gray-600"
-                          : h.score === 1 ? "bg-blue-100 text-blue-700"
-                          : "bg-blue-200 text-blue-900"
-                        }`}
-                      >
+                      <div className={`text-xs font-bold font-mono rounded-sm mx-0.5 py-0.5 ${scoreColor(h.score)}`}>
                         {h.strokes}
                       </div>
                     </div>
@@ -562,20 +547,9 @@ function InlineScorecard({
                       #
                     </div>
                     {round.holes.slice(9, 18).map((h) => (
-                      <div
-                        key={h.hole}
-                        className="flex-1 min-w-[1.75rem] text-center"
-                      >
+                      <div key={h.hole} className="flex-1 min-w-[1.75rem] text-center">
                         <div className="text-[8px] text-gray-400 mb-0.5">{h.hole}</div>
-                        <div
-                          className={`text-xs font-bold font-mono rounded-sm mx-0.5 py-0.5 ${
-                            h.score <= -2 ? "bg-yellow-200 text-yellow-900"
-                            : h.score === -1 ? "bg-red-100 text-red-700"
-                            : h.score === 0 ? "bg-white text-gray-600"
-                            : h.score === 1 ? "bg-blue-100 text-blue-700"
-                            : "bg-blue-200 text-blue-900"
-                          }`}
-                        >
+                        <div className={`text-xs font-bold font-mono rounded-sm mx-0.5 py-0.5 ${scoreColor(h.score)}`}>
                           {h.strokes}
                         </div>
                       </div>
@@ -602,11 +576,19 @@ function InlineScorecard({
         </div>
       )}
 
-      {scorecard && scorecard.holes.length === 0 && !loading && (
+      {scorecard && !hasHoles && !loading && (
         <p className="text-[10px] text-gray-400 text-center py-1">
           Hole-by-hole data not yet available.
         </p>
       )}
     </div>
   );
+}
+
+function scoreColor(score: number): string {
+  if (score <= -2) return "bg-yellow-200 text-yellow-900";
+  if (score === -1) return "bg-red-100 text-red-700";
+  if (score === 0) return "bg-white text-gray-600";
+  if (score === 1) return "bg-blue-100 text-blue-700";
+  return "bg-blue-200 text-blue-900";
 }
