@@ -52,8 +52,6 @@ export default function NavBar() {
 
   // Show Admin if commissioner OR if role is unclaimed and user is logged in
   const showAdmin = isCommissioner || (commissionerUnclaimed && !!user);
-  // Show Info for logged-in non-commissioners when commissioner is claimed
-  const showInfo = !!user && !isCommissioner && !commissionerUnclaimed;
 
   return (
     <header className="masters-gradient text-white shadow-lg">
@@ -72,9 +70,7 @@ export default function NavBar() {
         <nav className="hidden sm:flex items-center gap-4 text-sm">
           <a href="/" className="hover:text-[#f2c75c] transition-colors">Leaderboard</a>
           <a href="/picks" className="hover:text-[#f2c75c] transition-colors">My Picks</a>
-          {showInfo && (
-            <a href="/info" className="hover:text-[#f2c75c] transition-colors">Info</a>
-          )}
+          <a href="/info" className="hover:text-[#f2c75c] transition-colors">Info</a>
           {showAdmin && (
             <a href="/admin" className="hover:text-[#f2c75c] transition-colors">Admin</a>
           )}
@@ -148,11 +144,9 @@ export default function NavBar() {
             <a href="/picks" className="block py-2.5 text-base font-semibold hover:text-[#f2c75c]">
               My Picks
             </a>
-            {showInfo && (
-              <a href="/info" className="block py-2.5 text-base font-semibold hover:text-[#f2c75c]">
-                Info
-              </a>
-            )}
+            <a href="/info" className="block py-2.5 text-base font-semibold hover:text-[#f2c75c]">
+              Info
+            </a>
             {showAdmin && (
               <a href="/admin" className="block py-2.5 text-base font-semibold hover:text-[#f2c75c]">
                 Admin
