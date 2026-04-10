@@ -15,7 +15,7 @@ INSERT INTO golfers (name, espn_id, tier) VALUES
 ('Jon Rahm', '9780', 1),
 ('Rory McIlroy', '3470', 1),
 ('Xander Schauffele', '10140', 1),
-('Ludvig Aberg', '4686086', 1),
+('Ludvig Aberg', '4375972', 1),
 ('Collin Morikawa', '10592', 1);
 
 -- ============================================
@@ -26,8 +26,8 @@ INSERT INTO golfers (name, espn_id, tier) VALUES
 ('Cameron Young', '4425906', 2),
 ('Tommy Fleetwood', '5539', 2),
 ('Hideki Matsuyama', '5860', 2),
-('Robert MacIntyre', '10270', 2),
-('Justin Rose', '1466', 2),
+('Robert MacIntyre', '11378', 2),
+('Justin Rose', '569', 2),
 ('Min Woo Lee', '4410932', 2),
 ('Patrick Reed', '5579', 2);
 
@@ -36,9 +36,9 @@ INSERT INTO golfers (name, espn_id, tier) VALUES
 -- ============================================
 INSERT INTO golfers (name, espn_id, tier) VALUES
 ('Si Woo Kim', '10127', 3),
-('Jordan Spieth', '5765', 3),
+('Jordan Spieth', '5467', 3),
 ('Brooks Koepka', '6798', 3),
-('Chris Gotterup', '4686039', 3),
+('Chris Gotterup', '4690755', 3),
 ('Russell Henley', '5409', 3),
 ('Nicolai Hojgaard', '11250', 3),
 ('Viktor Hovland', '4364873', 3),
@@ -49,15 +49,15 @@ INSERT INTO golfers (name, espn_id, tier) VALUES
 -- ============================================
 INSERT INTO golfers (name, espn_id, tier) VALUES
 ('Akshay Bhatia', '4419142', 4),
-('Maverick McNealy', '11099', 4),
+('Maverick McNealy', '9530', 4),
 ('Jake Knapp', '9843', 4),
 ('Shane Lowry', '4587', 4),
 ('Patrick Cantlay', '6007', 4),
-('Justin Thomas', '9002', 4),
+('Justin Thomas', '4848', 4),
 ('Adam Scott', '388', 4),
 ('Jason Day', '1680', 4),
 ('Sepp Straka', '9611', 4),
-('Tyrrell Hatton', '9370', 4),
+('Tyrrell Hatton', '5553', 4),
 ('Corey Conners', '9272', 4);
 
 -- ============================================
