@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { calculateLeaderboard, formatScore, type UserResult, type Golfer, type ScorecardData } from "@/lib/scoring";
 import { golferImageUrl } from "@/lib/golfer-images";
@@ -287,8 +288,10 @@ export default function LeaderboardPage() {
                 const isTied = leaderboard.filter((e) => e.rank === entry.rank).length > 1;
                 const displayRank = isTied ? `T${entry.rank}` : `${entry.rank}`;
                 return (
-                  <div
+                  <motion.div
                     key={entry.userId}
+                    layout
+                    transition={{ type: "spring", stiffness: 500, damping: 40, mass: 0.8 }}
                     className={`bg-white rounded-lg shadow-sm border overflow-hidden ${
                       i === 0 ? "border-[#f2c75c] ring-1 ring-[#f2c75c]" : "border-gray-200"
                     }`}
@@ -398,7 +401,7 @@ export default function LeaderboardPage() {
                         ))}
                       </div>
                     )}
-                  </div>
+                  </motion.div>
                 );
               })}
             </div>
@@ -449,7 +452,11 @@ export default function LeaderboardPage() {
                     : isCut);
 
                   return (
-                    <div key={golfer.id}>
+                    <motion.div
+                      key={golfer.id}
+                      layout
+                      transition={{ type: "spring", stiffness: 500, damping: 40, mass: 0.8 }}
+                    >
                       {showCutLine && (
                         <div className="flex items-center gap-2 px-3 py-1.5 bg-red-50/80">
                           <div className="flex-1 border-t border-dashed border-red-300" />
@@ -524,7 +531,7 @@ export default function LeaderboardPage() {
                         />
                       )}
                       </div>
-                    </div>
+                    </motion.div>
                   );
                 })}
               </div>
