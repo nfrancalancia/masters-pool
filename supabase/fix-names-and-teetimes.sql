@@ -38,3 +38,10 @@ UPDATE golfers SET thru = '8:51 AM' WHERE name = 'Matt McCarty';
 
 -- Fix Michael Kim - should be +3, tee time 5:14 AM
 UPDATE golfers SET total_score = 3, thru = '5:14 AM' WHERE name = 'Michael Kim';
+
+-- Additional name fixes
+UPDATE golfers SET name = 'Mateo Pulcini', thru = '5:02 AM' WHERE name = 'Martin Pulcini';
+UPDATE golfers SET name = 'Brandon Holtz', thru = '9:15 AM' WHERE name = 'Ben Holtz';
+UPDATE golfers SET name = 'Fifa Laopakdee', thru = '5:50 AM' WHERE name = 'Fah Laopakdee';
+UPDATE golfers SET name = 'Nico Echavarria', thru = '9:15 AM' WHERE name = 'Noah Echavarria';
+UPDATE golfers SET name = 'Max Greyserman', thru = '8:39 AM' WHERE name = 'Matt Greyserman';
