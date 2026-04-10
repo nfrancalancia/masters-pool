@@ -362,7 +362,15 @@ export default function LeaderboardPage() {
                     </button>
 
                     {/* Expanded golfer details */}
+                    <AnimatePresence initial={false}>
                     {isExpanded && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.25, ease: "easeInOut" }}
+                        className="overflow-hidden"
+                      >
                       <div className="border-t border-gray-100 px-4 py-3 space-y-2 bg-gray-50/50">
                         {entry.golferScores.map((gs) => (
                           <div
@@ -417,18 +425,30 @@ export default function LeaderboardPage() {
                               </svg>
                             </button>
 
+                            <AnimatePresence initial={false}>
                             {expandedGolferId === gs.golfer.id && (
-                              <InlineScorecard
-                                golfer={gs.golfer}
-                                scorecard={gs.golfer.scorecard}
-                                selectedRound={selectedRound}
-                                onSelectRound={setSelectedRound}
-                              />
+                              <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: "auto", opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                transition={{ duration: 0.25, ease: "easeInOut" }}
+                                className="overflow-hidden"
+                              >
+                                <InlineScorecard
+                                  golfer={gs.golfer}
+                                  scorecard={gs.golfer.scorecard}
+                                  selectedRound={selectedRound}
+                                  onSelectRound={setSelectedRound}
+                                />
+                              </motion.div>
                             )}
+                            </AnimatePresence>
                           </div>
                         ))}
                       </div>
+                      </motion.div>
                     )}
+                    </AnimatePresence>
                   </motion.div>
                 );
               })}
@@ -558,14 +578,24 @@ export default function LeaderboardPage() {
                       </button>
 
                       {/* Scorecard inline below the row */}
+                      <AnimatePresence initial={false}>
                       {isExpanded && (
-                        <InlineScorecard
-                          golfer={golfer}
-                          scorecard={golfer.scorecard}
-                          selectedRound={selectedRound}
-                          onSelectRound={setSelectedRound}
-                        />
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.25, ease: "easeInOut" }}
+                          className="overflow-hidden"
+                        >
+                          <InlineScorecard
+                            golfer={golfer}
+                            scorecard={golfer.scorecard}
+                            selectedRound={selectedRound}
+                            onSelectRound={setSelectedRound}
+                          />
+                        </motion.div>
                       )}
+                      </AnimatePresence>
                       </div>
                     </motion.div>
                   );
