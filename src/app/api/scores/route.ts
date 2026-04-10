@@ -15,14 +15,16 @@ export async function GET() {
 
     const supabase = createServiceClient();
 
-    // Get existing golfers to match by ESPN ID
+    // Get existing golfers to match by ESPN ID (also grab current position for movement tracking)
     const { data: existingGolfers } = await supabase
       .from("golfers")
-      .select("id, espn_id");
+      .select("id, espn_id, position");
 
     const espnIdToDbId = new Map<string, number>();
+    const dbIdToCurrentPos = new Map<number, string>();
     (existingGolfers || []).forEach((g: any) => {
       if (g.espn_id) espnIdToDbId.set(g.espn_id, g.id);
+      if (g.position) dbIdToCurrentPos.set(g.id, g.position);
     });
 
     let updated = 0;
@@ -33,6 +35,8 @@ export async function GET() {
       const dbId = espnIdToDbId.get(update.espn_id);
 
       if (dbId) {
+        // Save current position as prev_position before overwriting
+        const currentPos = dbIdToCurrentPos.get(dbId);
         const { error } = await supabase
           .from("golfers")
           .update({
@@ -44,6 +48,7 @@ export async function GET() {
             status: update.status,
             thru: update.thru,
             position: update.position,
+            prev_position: currentPos || null,
             updated_at: update.updated_at,
           })
           .eq("id", dbId);

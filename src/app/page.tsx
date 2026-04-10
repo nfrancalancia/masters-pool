@@ -16,6 +16,16 @@ interface ScorecardData {
   }>;
 }
 
+/** Compute movement between current and previous ESPN order */
+function getMovement(position: string | null, prevPosition: string | null): number | null {
+  if (!position || !prevPosition) return null;
+  const cur = parseInt(position);
+  const prev = parseInt(prevPosition);
+  if (isNaN(cur) || isNaN(prev)) return null;
+  if (cur === prev) return 0;
+  return prev - cur; // positive = moved up, negative = moved down
+}
+
 export default function LeaderboardPage() {
   const [leaderboard, setLeaderboard] = useState<UserResult[]>([]);
   const [golfers, setGolfers] = useState<Golfer[]>([]);
@@ -110,7 +120,6 @@ export default function LeaderboardPage() {
       if (res.ok) {
         const data: ScorecardData = await res.json();
         setScorecard(data);
-        // Default to the latest round with data
         const latestRound = data.rounds
           .filter((r) => r.holes && r.holes.length > 0)
           .map((r) => r.round)
@@ -123,8 +132,7 @@ export default function LeaderboardPage() {
     setScorecardLoading(false);
   }
 
-  // Sort golfers using ESPN's sortOrder for stable, deterministic ordering
-  // (sortOrder encodes ESPN's full tiebreaking: current round, hole-by-hole, etc.)
+  // Sort golfers using ESPN's order for stable, deterministic ordering
   const sortedField = [...golfers].sort((a, b) => {
     const aPos = a.position ? parseInt(a.position) : 999;
     const bPos = b.position ? parseInt(b.position) : 999;
@@ -360,6 +368,7 @@ export default function LeaderboardPage() {
                 {sortedField.map((golfer, i) => {
                   const isCut = golfer.status === "cut" || golfer.status === "wd" || golfer.status === "dq";
                   const isExpanded = expandedGolferId === golfer.id;
+                  const movement = getMovement(golfer.position, golfer.prev_position);
 
                   return (
                     <tr
@@ -369,9 +378,8 @@ export default function LeaderboardPage() {
                     >
                       {isExpanded ? (
                         <td colSpan={8} className="p-0">
-                          {/* Expanded: show player row + scorecard */}
                           <div className="flex items-center px-3 py-2">
-                            <div className="w-7 flex-shrink-0 text-xs font-bold text-gray-500">
+                            <div className="w-10 flex-shrink-0 text-xs font-bold text-gray-500">
                               {fieldPositions[golfer.id] || (i + 1)}
                             </div>
                             <div className="flex items-center gap-1.5 flex-1 min-w-0">
@@ -390,7 +398,10 @@ export default function LeaderboardPage() {
                                 )}
                               </div>
                               <div className="min-w-0">
-                                <p className="text-[12px] sm:text-sm font-semibold truncate">{golfer.name}</p>
+                                <div className="flex items-center gap-1">
+                                  <p className="text-[12px] sm:text-sm font-semibold truncate">{golfer.name}</p>
+                                  <MovementArrow movement={movement} />
+                                </div>
                                 {isCut && (
                                   <span className="text-[9px] text-red-500 font-semibold uppercase">
                                     {golfer.status === "cut" ? "MC" : golfer.status}
@@ -405,7 +416,8 @@ export default function LeaderboardPage() {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                             </svg>
                           </div>
-                          <div onClick={(e) => e.stopPropagation()}>
+                          {/* Scorecard - stop propagation so scrolling/clicking inside doesn't collapse */}
+                          <div onClick={(e) => e.stopPropagation()} onTouchMove={(e) => e.stopPropagation()}>
                             <InlineScorecard
                               golfer={golfer}
                               scorecard={scorecard}
@@ -437,7 +449,10 @@ export default function LeaderboardPage() {
                                 )}
                               </div>
                               <div className="min-w-0">
-                                <p className="text-[12px] sm:text-sm font-semibold truncate">{golfer.name}</p>
+                                <div className="flex items-center gap-1">
+                                  <p className="text-[12px] sm:text-sm font-semibold truncate">{golfer.name}</p>
+                                  <MovementArrow movement={movement} />
+                                </div>
                                 {isCut && (
                                   <span className="text-[9px] text-red-500 font-semibold uppercase">
                                     {golfer.status === "cut" ? "MC" : golfer.status}
@@ -472,6 +487,31 @@ function totalScoreClass(score: number): string {
   if (score < 0) return "score-under-par";
   if (score > 0) return "score-over-par";
   return "score-even";
+}
+
+/** Movement arrow indicator */
+function MovementArrow({ movement }: { movement: number | null }) {
+  if (movement === null || movement === 0) return null;
+
+  if (movement > 0) {
+    return (
+      <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-green-600 flex-shrink-0">
+        <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 10 10">
+          <path d="M5 1L9 6H1L5 1Z" />
+        </svg>
+        {movement}
+      </span>
+    );
+  }
+
+  return (
+    <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-red-500 flex-shrink-0">
+      <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 10 10">
+        <path d="M5 9L1 4H9L5 9Z" />
+      </svg>
+      {Math.abs(movement)}
+    </span>
+  );
 }
 
 /** Inline scorecard component — shown when a golfer row is expanded */

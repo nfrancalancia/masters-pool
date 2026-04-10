@@ -13,6 +13,7 @@ export interface Golfer {
   total_score: number | null;
   thru: string | null;
   position: string | null;
+  prev_position: string | null;
   status: "active" | "cut" | "wd" | "dq";
   odds: string | null;
 }

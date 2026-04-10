@@ -8,17 +8,19 @@ export interface ESPNCompetitor {
   id: string;
   uid: string;
   athlete: {
-    id: string;
+    id?: string;
     fullName: string;
     displayName: string;
     shortName: string;
     flag?: { alt: string };
   };
   score: string; // "-5", "E", "+3"
+  order?: number; // ESPN's sort order (deterministic tiebreaking)
   linescores?: Array<{
-    value: number;
-    displayValue: string;
+    value: number | null;
+    displayValue: string | null;
     period: number; // round number
+    linescores?: Array<any>; // hole-by-hole nested data
   }>;
   status?: {
     type?: {
@@ -28,7 +30,6 @@ export interface ESPNCompetitor {
     thru?: number;
     displayValue?: string; // "F", "12", etc.
   };
-  sortOrder?: number;
   statistics?: any;
 }
 
@@ -93,14 +94,14 @@ export function mapESPNToGolferUpdate(competitor: ESPNCompetitor) {
   const score = competitor.score;
   const totalScore = score === "E" ? 0 : parseInt(score, 10) || null;
 
-  // Extract per-round scores
+  // Extract per-round scores (value is null for unplayed rounds)
   const rounds = competitor.linescores || [];
   const round1 = rounds.find((r) => r.period === 1)?.value ?? null;
   const round2 = rounds.find((r) => r.period === 2)?.value ?? null;
   const round3 = rounds.find((r) => r.period === 3)?.value ?? null;
   const round4 = rounds.find((r) => r.period === 4)?.value ?? null;
 
-  // Determine status
+  // Determine status from status field if present, otherwise infer
   const statusType = competitor.status?.type?.name || "";
   let status: "active" | "cut" | "wd" | "dq" = "active";
   if (statusType.includes("CUT")) status = "cut";
@@ -110,8 +111,8 @@ export function mapESPNToGolferUpdate(competitor: ESPNCompetitor) {
   // Thru indicator
   const thru = competitor.status?.displayValue || "";
 
-  // Position
-  const position = competitor.sortOrder?.toString() || "";
+  // Position — use ESPN's order field for stable sorting
+  const position = competitor.order?.toString() || "";
 
   return {
     espn_id: competitor.athlete?.id || competitor.id,
