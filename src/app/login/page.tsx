@@ -5,45 +5,58 @@ import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
-  const [step, setStep] = useState<"loading" | "email" | "name">("loading");
+  const [mode, setMode] = useState<"loading" | "signin" | "signup">("loading");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [poolLocked, setPoolLocked] = useState(false);
 
   const supabase = createClient();
 
-  // Check if already signed in
   useEffect(() => {
-    async function checkAuth() {
+    async function init() {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         window.location.href = "/picks";
         return;
       }
-      setStep("email");
+
+      // Check if pool is locked (to control whether signup is available)
+      const { data: settings } = await supabase
+        .from("pool_settings")
+        .select("is_locked, entry_deadline")
+        .limit(1);
+
+      if (settings?.[0]) {
+        const isLocked =
+          settings[0].is_locked ||
+          new Date(settings[0].entry_deadline) < new Date();
+        setPoolLocked(isLocked);
+      }
+
+      setMode("signin");
     }
-    checkAuth();
+    init();
   }, [supabase]);
 
-  async function handleEmailSubmit(e: React.FormEvent) {
+  async function handleSignIn(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setMessage("");
 
-    // Try signing in first (existing user)
     const { error } = await supabase.auth.signInWithPassword({
       email,
-      password: email,
+      password,
     });
 
-    if (!error) {
-      window.location.href = "/picks";
+    if (error) {
+      setMessage("Invalid email or password.");
+      setLoading(false);
       return;
     }
 
-    // No account yet — ask for their name
-    setStep("name");
-    setLoading(false);
+    window.location.href = "/picks";
   }
 
   async function handleSignUp(e: React.FormEvent) {
@@ -51,9 +64,15 @@ export default function LoginPage() {
     setLoading(true);
     setMessage("");
 
+    if (password.length < 6) {
+      setMessage("Password must be at least 6 characters.");
+      setLoading(false);
+      return;
+    }
+
     const { error } = await supabase.auth.signUp({
       email,
-      password: email,
+      password,
       options: {
         data: { display_name: displayName || email.split("@")[0] },
       },
@@ -65,17 +84,15 @@ export default function LoginPage() {
       return;
     }
 
-    // Auto sign in after creating account
+    // Auto sign in
     const { error: signInError } = await supabase.auth.signInWithPassword({
       email,
-      password: email,
+      password,
     });
 
     if (signInError) {
-      setMessage(
-        "Account created but sign-in failed. Please try entering your email again."
-      );
-      setStep("email");
+      setMessage("Account created! You can now sign in.");
+      setMode("signin");
       setLoading(false);
       return;
     }
@@ -83,7 +100,7 @@ export default function LoginPage() {
     window.location.href = "/picks";
   }
 
-  if (step === "loading") {
+  if (mode === "loading") {
     return (
       <div className="flex items-center justify-center py-20">
         <div className="animate-spin w-8 h-8 border-4 border-[#006747] border-t-transparent rounded-full" />
@@ -95,16 +112,16 @@ export default function LoginPage() {
     <div className="max-w-md mx-auto mt-8">
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <h2 className="text-xl font-bold text-[#006747] mb-1">
-          {step === "email" ? "Welcome to the Pool" : "One more thing..."}
+          {mode === "signin" ? "Sign In" : "Join the Pool"}
         </h2>
         <p className="text-sm text-gray-500 mb-6">
-          {step === "email"
-            ? "Enter your email to sign in or join."
-            : "Since you're new, tell us your name for the leaderboard."}
+          {mode === "signin"
+            ? "Enter your email and password."
+            : "Create your account and team name."}
         </p>
 
-        {step === "email" ? (
-          <form onSubmit={handleEmailSubmit} className="space-y-4">
+        {mode === "signin" ? (
+          <form onSubmit={handleSignIn} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Email
@@ -120,31 +137,16 @@ export default function LoginPage() {
               />
             </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-[#006747] text-white py-2.5 rounded-md font-semibold hover:bg-[#004d35] transition-colors disabled:opacity-50"
-            >
-              {loading ? "..." : "Continue"}
-            </button>
-          </form>
-        ) : (
-          <form onSubmit={handleSignUp} className="space-y-4">
-            <div className="text-sm text-gray-600 bg-gray-50 rounded-md px-3 py-2">
-              {email}
-            </div>
-
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Display Name
+                Password
               </label>
               <input
-                type="text"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                placeholder="Your name (shown on leaderboard)"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Your password"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#006747] focus:border-transparent"
-                autoFocus
                 required
               />
             </div>
@@ -154,18 +156,61 @@ export default function LoginPage() {
               disabled={loading}
               className="w-full bg-[#006747] text-white py-2.5 rounded-md font-semibold hover:bg-[#004d35] transition-colors disabled:opacity-50"
             >
-              {loading ? "..." : "Join the Pool"}
+              {loading ? "..." : "Sign In"}
             </button>
+          </form>
+        ) : (
+          <form onSubmit={handleSignUp} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Team / Display Name
+              </label>
+              <input
+                type="text"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                placeholder="Shown on the leaderboard"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#006747] focus:border-transparent"
+                required
+                autoFocus
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Email
+              </label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#006747] focus:border-transparent"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Password
+              </label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="At least 6 characters"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#006747] focus:border-transparent"
+                required
+                minLength={6}
+              />
+            </div>
 
             <button
-              type="button"
-              onClick={() => {
-                setStep("email");
-                setMessage("");
-              }}
-              className="w-full text-sm text-gray-500 hover:text-gray-700"
+              type="submit"
+              disabled={loading}
+              className="w-full bg-[#006747] text-white py-2.5 rounded-md font-semibold hover:bg-[#004d35] transition-colors disabled:opacity-50"
             >
-              Back
+              {loading ? "..." : "Create Account"}
             </button>
           </form>
         )}
@@ -175,6 +220,26 @@ export default function LoginPage() {
             {message}
           </p>
         )}
+
+        <div className="mt-4 text-center">
+          {mode === "signin" ? (
+            !poolLocked && (
+              <button
+                onClick={() => { setMode("signup"); setMessage(""); }}
+                className="text-sm text-[#006747] underline hover:no-underline"
+              >
+                New here? Create an account
+              </button>
+            )
+          ) : (
+            <button
+              onClick={() => { setMode("signin"); setMessage(""); }}
+              className="text-sm text-[#006747] underline hover:no-underline"
+            >
+              Already have an account? Sign in
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
