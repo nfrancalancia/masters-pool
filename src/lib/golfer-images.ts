@@ -1,8 +1,5 @@
 // ESPN IDs that don't have headshots on ESPN CDN — use PGA Tour CDN instead
 const PGA_TOUR_FALLBACKS: Record<string, string> = {
-  "10127": "37455",     // Si Woo Kim
-  "9611": "49960",      // Sepp Straka
-  "4849550": "55182",   // Tom Kim
   "2201886": "",        // Brandon Holtz (no image available)
 };
 

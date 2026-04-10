@@ -35,7 +35,7 @@ INSERT INTO golfers (name, espn_id, tier) VALUES
 -- TIER 3 - MID-TIER
 -- ============================================
 INSERT INTO golfers (name, espn_id, tier) VALUES
-('Si Woo Kim', '10127', 3),
+('Si Woo Kim', '7081', 3),
 ('Jordan Spieth', '5467', 3),
 ('Brooks Koepka', '6798', 3),
 ('Chris Gotterup', '4690755', 3),
@@ -56,9 +56,9 @@ INSERT INTO golfers (name, espn_id, tier) VALUES
 ('Justin Thomas', '4848', 4),
 ('Adam Scott', '388', 4),
 ('Jason Day', '1680', 4),
-('Sepp Straka', '9611', 4),
+('Sepp Straka', '8961', 4),
 ('Tyrrell Hatton', '5553', 4),
-('Corey Conners', '9272', 4);
+('Corey Conners', '9126', 4);
 
 -- ============================================
 -- TIER 5 - LONGSHOTS
