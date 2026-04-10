@@ -94,12 +94,20 @@ export function mapESPNToGolferUpdate(competitor: ESPNCompetitor) {
   const score = competitor.score;
   const totalScore = score === "E" ? 0 : parseInt(score, 10) || null;
 
-  // Extract per-round scores (value is null for unplayed rounds)
+  // Extract per-round scores — only set when round is complete (18 holes)
   const rounds = competitor.linescores || [];
-  const round1 = rounds.find((r) => r.period === 1)?.value ?? null;
-  const round2 = rounds.find((r) => r.period === 2)?.value ?? null;
-  const round3 = rounds.find((r) => r.period === 3)?.value ?? null;
-  const round4 = rounds.find((r) => r.period === 4)?.value ?? null;
+  function getRoundScore(period: number): number | null {
+    const r = rounds.find((r: any) => r.period === period);
+    if (!r || r.value === null || r.value === 0) return null;
+    // Only count as final if 18 holes played
+    const holesPlayed = r.linescores?.length ?? 0;
+    if (holesPlayed > 0 && holesPlayed < 18) return null;
+    return r.value;
+  }
+  const round1 = getRoundScore(1);
+  const round2 = getRoundScore(2);
+  const round3 = getRoundScore(3);
+  const round4 = getRoundScore(4);
 
   // Determine status from status field if present, otherwise infer
   const statusType = competitor.status?.type?.name || "";
@@ -108,8 +116,19 @@ export function mapESPNToGolferUpdate(competitor: ESPNCompetitor) {
   else if (statusType.includes("WITHDRAW")) status = "wd";
   else if (statusType.includes("DQ")) status = "dq";
 
-  // Thru indicator
-  const thru = competitor.status?.displayValue || "";
+  // Thru indicator — ESPN doesn't provide status on competitors,
+  // so compute from scorecard: find latest round with holes played
+  let thru = competitor.status?.displayValue || "";
+  if (!thru) {
+    // Find the latest round that has hole-by-hole data
+    const latestRoundWithHoles = rounds
+      .filter((r: any) => r.linescores && r.linescores.length > 0)
+      .sort((a: any, b: any) => b.period - a.period)[0];
+    if (latestRoundWithHoles) {
+      const holesPlayed = latestRoundWithHoles.linescores?.length ?? 0;
+      thru = holesPlayed >= 18 ? "F" : `${holesPlayed}`;
+    }
+  }
 
   // Position — use ESPN's order field for stable sorting
   const position = competitor.order?.toString() || "";
