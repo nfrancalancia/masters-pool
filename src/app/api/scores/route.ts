@@ -57,10 +57,6 @@ export async function GET(request: Request) {
       if (g.position) dbIdToCurrentPos.set(g.id, g.position);
     });
 
-    // ESPN IDs with known bad data — skip score updates for these players
-    // Michael Kim (8974): ESPN shows +1 but hole-by-hole totals to +3
-    const SKIP_SCORE_ESPN_IDS = new Set(["8974"]);
-
     let updated = 0;
     let skipped = 0;
 
@@ -69,11 +65,6 @@ export async function GET(request: Request) {
       const dbId = espnIdToDbId.get(update.espn_id);
 
       if (dbId) {
-        // Skip players with known ESPN data bugs
-        if (SKIP_SCORE_ESPN_IDS.has(update.espn_id)) {
-          skipped++;
-          continue;
-        }
         // Save current position as prev_position before overwriting
         const currentPos = dbIdToCurrentPos.get(dbId);
         // Only overwrite thru if ESPN provides a value (preserve manual tee times)
