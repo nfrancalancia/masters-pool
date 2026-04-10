@@ -4,6 +4,9 @@
 const MASTERS_EVENT_ID = "401811941";
 const ESPN_BASE = "https://site.api.espn.com/apis/site/v2/sports/golf/pga";
 
+// Augusta National par by hole (1-18)
+const AUGUSTA_PAR = [4, 5, 4, 3, 4, 3, 4, 5, 4, 4, 4, 3, 5, 4, 5, 3, 4, 4];
+
 export interface ESPNCompetitor {
   id: string;
   uid: string;
@@ -144,13 +147,13 @@ export function mapESPNToGolferUpdate(competitor: ESPNCompetitor) {
       .map((r: any) => {
         const holes = r.linescores.map((h: any) => {
           const strokes = Math.round(h.value);
-          const scoreDisplay = h.scoreType?.displayValue || "E";
-          let scoreToPar = 0;
-          if (scoreDisplay !== "E") scoreToPar = parseInt(scoreDisplay) || 0;
+          const holeNum = h.period; // 1-indexed hole number
+          const holePar = AUGUSTA_PAR[(holeNum - 1) % 18] || 4;
+          const scoreToPar = strokes - holePar;
           return {
-            hole: h.period,
+            hole: holeNum,
             strokes,
-            par: strokes - scoreToPar,
+            par: holePar,
             score: scoreToPar,
           };
         });

@@ -154,6 +154,22 @@ export default function LeaderboardPage() {
     fieldRank[golfer.id] = i + 1;
   });
 
+  // Compute R1 final rankings from round1 scores (for movement arrows)
+  const r1Rank: Record<number, number> = {};
+  const golfersWithR1 = [...golfers]
+    .filter((g) => g.round1 !== null && g.round1 !== undefined)
+    .sort((a, b) => {
+      // Sort by round1 strokes ascending (lower is better)
+      if (a.round1! !== b.round1!) return a.round1! - b.round1!;
+      // Tiebreaker: ESPN position for stable ordering
+      const aPos = a.position ? parseInt(a.position) : 999;
+      const bPos = b.position ? parseInt(b.position) : 999;
+      return aPos - bPos;
+    });
+  golfersWithR1.forEach((golfer, i) => {
+    r1Rank[golfer.id] = i + 1;
+  });
+
   // Compute "today" score: current round's score relative to par from scorecard
   const todayScore: Record<number, number | null> = {};
   golfers.forEach((g) => {
@@ -397,10 +413,10 @@ export default function LeaderboardPage() {
                 {sortedField.map((golfer, i) => {
                   const isCut = golfer.status === "cut" || golfer.status === "wd" || golfer.status === "dq";
                   const isExpanded = expandedGolferId === golfer.id;
-                  // Movement: compare R1 final position (prev_position) to current computed rank
-                  const curPos = fieldRank[golfer.id] ?? null;
-                  const prevPos = golfer.prev_position ? parseInt(golfer.prev_position) : null;
-                  const movement = curPos !== null && prevPos !== null && !isNaN(prevPos) ? prevPos - curPos : null;
+                  // Movement: compare R1 final rank (computed from round1 scores) to current rank
+                  const curRank = fieldRank[golfer.id] ?? null;
+                  const prevRank = r1Rank[golfer.id] ?? null;
+                  const movement = curRank !== null && prevRank !== null ? prevRank - curRank : null;
 
                   return (
                     <div key={golfer.id} className={isCut && !isExpanded ? "opacity-50" : ""}>
