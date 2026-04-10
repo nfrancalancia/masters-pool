@@ -127,6 +127,11 @@ export default function LeaderboardPage() {
 
   // Sort golfers using ESPN's order for stable, deterministic ordering
   const sortedField = [...golfers].sort((a, b) => {
+    // WD/DQ/Cut players sort to the bottom
+    const aOut = a.status === "wd" || a.status === "dq" || a.status === "cut";
+    const bOut = b.status === "wd" || b.status === "dq" || b.status === "cut";
+    if (aOut && !bOut) return 1;
+    if (!aOut && bOut) return -1;
     // Primary: sort by total_score ascending (lowest wins), nulls last
     if (a.total_score === null && b.total_score === null) return 0;
     if (a.total_score === null) return 1;
@@ -439,9 +444,9 @@ export default function LeaderboardPage() {
                     ? (golfer.total_score !== null && golfer.total_score > CUT_SCORE && (prevScore === null || prevScore <= CUT_SCORE))
                     : (isCut && (i === 0 || sortedField[i - 1].status !== "cut" && sortedField[i - 1].status !== "wd" && sortedField[i - 1].status !== "dq"));
 
-                  const belowCut = !anyCut
+                  const belowCut = golfer.status === "wd" || golfer.status === "dq" || (!anyCut
                     ? (golfer.total_score !== null && golfer.total_score > CUT_SCORE)
-                    : isCut;
+                    : isCut);
 
                   return (
                     <div key={golfer.id}>
