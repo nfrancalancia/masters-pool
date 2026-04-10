@@ -20,9 +20,11 @@ function shouldFetchScores(): boolean {
 }
 
 // GET /api/scores - Fetch latest scores from ESPN and update database
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    if (!shouldFetchScores()) {
+    const url = new URL(request.url);
+    const force = url.searchParams.get("force") === "true";
+    if (!force && !shouldFetchScores()) {
       return NextResponse.json({
         success: true,
         updated: 0,
