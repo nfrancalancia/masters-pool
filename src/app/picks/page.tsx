@@ -10,6 +10,7 @@ interface Golfer {
   tier: number;
   total_score: number | null;
   status: string;
+  odds: string | null;
 }
 
 function golferImageUrl(espnId: string | null): string {
@@ -146,6 +147,9 @@ export default function PicksPage() {
         <p className="text-sm text-gray-500">
           Select 1 golfer from each tier. Your worst 2 scores will be dropped.
         </p>
+        <p className="text-[10px] text-gray-400 mt-1">
+          Odds shown are pre-tournament and do not update live.
+        </p>
         {isLocked && (
           <div className="mt-2 bg-red-50 border border-red-200 text-red-700 text-sm rounded p-3">
             Picks are locked. The deadline has passed or the pool is locked by the commissioner.
@@ -207,16 +211,21 @@ export default function PicksPage() {
                           </div>
                           <div className="min-w-0 flex-1">
                             <div className="font-semibold truncate text-xs">{golfer.name}</div>
-                            {golfer.total_score !== null && (
-                              <div className={`text-xs mt-0.5 ${
-                                golfer.total_score < 0 ? "score-negative" : "text-gray-500"
-                              }`}>
-                                {golfer.total_score === 0 ? "E" : golfer.total_score > 0 ? `+${golfer.total_score}` : golfer.total_score}
-                                {golfer.status !== "active" && (
-                                  <span className="ml-1 text-red-500 uppercase">{golfer.status}</span>
-                                )}
-                              </div>
-                            )}
+                            <div className="flex items-center gap-2 mt-0.5">
+                              {golfer.odds && (
+                                <span className="text-[10px] text-gray-400 font-mono">{golfer.odds}</span>
+                              )}
+                              {golfer.total_score !== null && (
+                                <span className={`text-xs ${
+                                  golfer.total_score < 0 ? "score-negative" : "text-gray-500"
+                                }`}>
+                                  {golfer.total_score === 0 ? "E" : golfer.total_score > 0 ? `+${golfer.total_score}` : golfer.total_score}
+                                  {golfer.status !== "active" && (
+                                    <span className="ml-1 text-red-500 uppercase">{golfer.status}</span>
+                                  )}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </button>
                       );

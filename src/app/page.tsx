@@ -98,6 +98,9 @@ export default function LeaderboardPage() {
             <p className="text-xs text-gray-500">
               Pick 6 | Drop worst 2 | Lowest total wins
             </p>
+            <p className="text-[10px] text-gray-400 mt-0.5">
+              Odds shown are pre-tournament and do not update live.
+            </p>
           </div>
           <div className="text-right text-xs text-gray-400">
             <p>
@@ -226,6 +229,9 @@ export default function LeaderboardPage() {
                             <span className="text-[10px] text-gray-400 font-mono flex-shrink-0">T{gs.tier}</span>
                           </div>
                           <div className="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
+                            {gs.golfer.odds && (
+                              <span className="text-gray-400 font-mono text-[10px]">{gs.golfer.odds}</span>
+                            )}
                             {gs.golfer.thru && (
                               <span>
                                 {gs.golfer.thru === "F" ? "Final" : `Thru ${gs.golfer.thru}`}

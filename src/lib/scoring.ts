@@ -14,6 +14,7 @@ export interface Golfer {
   thru: string | null;
   position: string | null;
   status: "active" | "cut" | "wd" | "dq";
+  odds: string | null;
 }
 
 export interface Pick {
