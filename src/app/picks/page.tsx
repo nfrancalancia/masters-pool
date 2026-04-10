@@ -148,7 +148,7 @@ export default function PicksPage() {
           Select 1 golfer from each tier. Your worst 2 scores will be dropped.
         </p>
         <p className="text-[10px] text-gray-400 mt-1">
-          Odds shown are pre-tournament and do not update live.
+          Odds updated after Round 1 — not live.
         </p>
         {isLocked && (
           <div className="mt-2 bg-red-50 border border-red-200 text-red-700 text-sm rounded p-3">

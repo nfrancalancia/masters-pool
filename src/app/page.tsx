@@ -99,7 +99,7 @@ export default function LeaderboardPage() {
               Pick 6 | Drop worst 2 | Lowest total wins
             </p>
             <p className="text-[10px] text-gray-400 mt-0.5">
-              Odds shown are pre-tournament and do not update live.
+              Odds updated after Round 1 — not live.
             </p>
           </div>
           <div className="text-right text-xs text-gray-400">
