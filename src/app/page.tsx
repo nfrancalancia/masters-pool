@@ -349,134 +349,134 @@ export default function LeaderboardPage() {
 
       {/* Tournament Field Tab */}
       {activeTab === "field" && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[520px] border-collapse">
-              <thead>
-                <tr className="bg-gray-50 border-b border-gray-200">
-                  <th className="sticky left-0 z-10 bg-gray-50 w-10 pl-2 py-2 text-left text-[10px] text-gray-500 font-semibold uppercase">#</th>
-                  <th className="sticky left-10 z-10 bg-gray-50 py-2 text-left text-[10px] text-gray-500 font-semibold uppercase min-w-[120px] sm:min-w-[170px]">Player</th>
-                  <th className="w-12 py-2 text-center text-[10px] text-gray-500 font-semibold uppercase">Tot</th>
-                  <th className="w-10 py-2 text-center text-[10px] text-gray-500 font-semibold uppercase">Thru</th>
-                  <th className="w-10 py-2 text-center text-[10px] text-gray-500 font-semibold uppercase">R1</th>
-                  <th className="w-10 py-2 text-center text-[10px] text-gray-500 font-semibold uppercase">R2</th>
-                  <th className="w-10 py-2 text-center text-[10px] text-gray-500 font-semibold uppercase">R3</th>
-                  <th className="w-10 py-2 text-center text-[10px] text-gray-500 font-semibold uppercase">R4</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {sortedField.map((golfer, i) => {
-                  const isCut = golfer.status === "cut" || golfer.status === "wd" || golfer.status === "dq";
-                  const isExpanded = expandedGolferId === golfer.id;
-                  const movement = getMovement(golfer.position, golfer.prev_position);
-
-                  return (
-                    <tr
-                      key={golfer.id}
-                      className={`${isCut && !isExpanded ? "opacity-50" : ""} cursor-pointer hover:bg-green-50/50 transition-colors`}
-                      onClick={() => toggleGolferExpand(golfer)}
-                    >
-                      {isExpanded ? (
-                        <td colSpan={8} className="p-0">
-                          <div className="flex items-center px-3 py-2">
-                            <div className="w-10 flex-shrink-0 text-xs font-bold text-gray-500">
-                              {fieldPositions[golfer.id] || (i + 1)}
-                            </div>
-                            <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                              <div className="flex-shrink-0 w-6 h-6 rounded-full overflow-hidden bg-gray-200">
-                                {golfer.espn_id ? (
-                                  <img
-                                    src={golferImageUrl(golfer.espn_id)}
-                                    alt={golfer.name}
-                                    className="w-full h-full object-cover object-top"
-                                    onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-                                  />
-                                ) : (
-                                  <div className="w-full h-full flex items-center justify-center text-gray-400 text-[8px] font-bold">
-                                    {golfer.name.charAt(0)}
-                                  </div>
-                                )}
-                              </div>
-                              <div className="min-w-0">
-                                <div className="flex items-center gap-1">
-                                  <p className="text-[12px] sm:text-sm font-semibold truncate">{golfer.name}</p>
-                                  <MovementArrow movement={movement} />
-                                </div>
-                                {isCut && (
-                                  <span className="text-[9px] text-red-500 font-semibold uppercase">
-                                    {golfer.status === "cut" ? "MC" : golfer.status}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                            <span className={`text-sm font-bold ${totalScoreClass(golfer.total_score ?? 0)}`}>
-                              {formatScore(golfer.total_score)}
-                            </span>
-                            <svg className="w-4 h-4 ml-2 text-gray-300 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                            </svg>
-                          </div>
-                          {/* Scorecard - stop propagation so scrolling/clicking inside doesn't collapse */}
-                          <div onClick={(e) => e.stopPropagation()} onTouchMove={(e) => e.stopPropagation()}>
-                            <InlineScorecard
-                              golfer={golfer}
-                              scorecard={scorecard}
-                              loading={scorecardLoading}
-                              selectedRound={selectedRound}
-                              onSelectRound={setSelectedRound}
-                            />
-                          </div>
-                        </td>
-                      ) : (
-                        <>
-                          <td className="sticky left-0 z-10 bg-white pl-2 py-2 text-xs font-bold text-gray-500">
-                            {fieldPositions[golfer.id] || (i + 1)}
-                          </td>
-                          <td className="sticky left-10 z-10 bg-white py-2">
-                            <div className="flex items-center gap-1.5 min-w-0 pr-2">
-                              <div className="flex-shrink-0 w-6 h-6 rounded-full overflow-hidden bg-gray-200">
-                                {golfer.espn_id ? (
-                                  <img
-                                    src={golferImageUrl(golfer.espn_id)}
-                                    alt={golfer.name}
-                                    className="w-full h-full object-cover object-top"
-                                    onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-                                  />
-                                ) : (
-                                  <div className="w-full h-full flex items-center justify-center text-gray-400 text-[8px] font-bold">
-                                    {golfer.name.charAt(0)}
-                                  </div>
-                                )}
-                              </div>
-                              <div className="min-w-0">
-                                <div className="flex items-center gap-1">
-                                  <p className="text-[12px] sm:text-sm font-semibold truncate">{golfer.name}</p>
-                                  <MovementArrow movement={movement} />
-                                </div>
-                                {isCut && (
-                                  <span className="text-[9px] text-red-500 font-semibold uppercase">
-                                    {golfer.status === "cut" ? "MC" : golfer.status}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          </td>
-                          <td className={`text-center text-sm font-bold ${totalScoreClass(golfer.total_score ?? 0)}`}>
-                            {formatScore(golfer.total_score)}
-                          </td>
-                          <td className="text-center text-[11px] text-gray-500">{golfer.thru || "-"}</td>
-                          <td className="text-center text-xs text-gray-600 font-mono">{golfer.round1 ?? "-"}</td>
-                          <td className="text-center text-xs text-gray-600 font-mono">{golfer.round2 ?? "-"}</td>
-                          <td className="text-center text-xs text-gray-600 font-mono">{golfer.round3 ?? "-"}</td>
-                          <td className="text-center text-xs text-gray-600 font-mono">{golfer.round4 ?? "-"}</td>
-                        </>
-                      )}
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden divide-y divide-gray-100">
+          {/* Header */}
+          <div className="flex items-center bg-gray-50 border-b border-gray-200">
+            <div className="flex-shrink-0 w-10 pl-2 py-2 text-[10px] text-gray-500 font-semibold uppercase">#</div>
+            <div className="flex-shrink-0 w-[110px] sm:w-[160px] py-2 text-[10px] text-gray-500 font-semibold uppercase">Player</div>
+            <div className="flex-1 overflow-x-auto">
+              <div className="flex min-w-max">
+                <span className="w-12 text-center py-2 text-[10px] text-gray-500 font-semibold uppercase">Tot</span>
+                <span className="w-10 text-center py-2 text-[10px] text-gray-500 font-semibold uppercase">Thru</span>
+                <span className="w-10 text-center py-2 text-[10px] text-gray-500 font-semibold uppercase">R1</span>
+                <span className="w-10 text-center py-2 text-[10px] text-gray-500 font-semibold uppercase">R2</span>
+                <span className="w-10 text-center py-2 text-[10px] text-gray-500 font-semibold uppercase">R3</span>
+                <span className="w-10 text-center py-2 text-[10px] text-gray-500 font-semibold uppercase">R4</span>
+              </div>
+            </div>
           </div>
+
+          {sortedField.map((golfer, i) => {
+            const isCut = golfer.status === "cut" || golfer.status === "wd" || golfer.status === "dq";
+            const isExpanded = expandedGolferId === golfer.id;
+            const movement = getMovement(golfer.position, golfer.prev_position);
+
+            if (isExpanded) {
+              // Expanded: pool-standings style — full width, no outer horizontal scroll
+              return (
+                <div key={golfer.id} className="bg-white">
+                  <button
+                    onClick={() => toggleGolferExpand(golfer)}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-green-50/50 transition-colors"
+                  >
+                    <div className="flex-shrink-0 w-8 text-xs font-bold text-gray-500">
+                      {fieldPositions[golfer.id] || (i + 1)}
+                    </div>
+                    <div className="flex-shrink-0 w-6 h-6 rounded-full overflow-hidden bg-gray-200">
+                      {golfer.espn_id ? (
+                        <img
+                          src={golferImageUrl(golfer.espn_id)}
+                          alt={golfer.name}
+                          className="w-full h-full object-cover object-top"
+                          onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-400 text-[8px] font-bold">
+                          {golfer.name.charAt(0)}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1">
+                        <p className="text-[12px] sm:text-sm font-semibold truncate">{golfer.name}</p>
+                        <MovementArrow movement={movement} />
+                      </div>
+                      {isCut && (
+                        <span className="text-[9px] text-red-500 font-semibold uppercase">
+                          {golfer.status === "cut" ? "MC" : golfer.status}
+                        </span>
+                      )}
+                    </div>
+                    <span className={`text-sm font-bold flex-shrink-0 ${totalScoreClass(golfer.total_score ?? 0)}`}>
+                      {formatScore(golfer.total_score)}
+                    </span>
+                    <svg className="w-4 h-4 text-gray-300 flex-shrink-0 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  <InlineScorecard
+                    golfer={golfer}
+                    scorecard={scorecard}
+                    loading={scorecardLoading}
+                    selectedRound={selectedRound}
+                    onSelectRound={setSelectedRound}
+                  />
+                </div>
+              );
+            }
+
+            // Collapsed: fixed left columns + scrollable data
+            return (
+              <div
+                key={golfer.id}
+                className={`flex items-center cursor-pointer hover:bg-green-50/50 transition-colors ${isCut ? "opacity-50" : ""}`}
+                onClick={() => toggleGolferExpand(golfer)}
+              >
+                <div className="flex-shrink-0 w-10 pl-2 py-2 text-xs font-bold text-gray-500">
+                  {fieldPositions[golfer.id] || (i + 1)}
+                </div>
+                <div className="flex-shrink-0 w-[110px] sm:w-[160px] flex items-center gap-1.5 py-2 min-w-0">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full overflow-hidden bg-gray-200">
+                    {golfer.espn_id ? (
+                      <img
+                        src={golferImageUrl(golfer.espn_id)}
+                        alt={golfer.name}
+                        className="w-full h-full object-cover object-top"
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-gray-400 text-[8px] font-bold">
+                        {golfer.name.charAt(0)}
+                      </div>
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1">
+                      <p className="text-[12px] sm:text-sm font-semibold truncate">{golfer.name}</p>
+                      <MovementArrow movement={movement} />
+                    </div>
+                    {isCut && (
+                      <span className="text-[9px] text-red-500 font-semibold uppercase">
+                        {golfer.status === "cut" ? "MC" : golfer.status}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="flex-1 overflow-x-auto">
+                  <div className="flex min-w-max">
+                    <span className={`w-12 text-center text-sm font-bold ${totalScoreClass(golfer.total_score ?? 0)}`}>
+                      {formatScore(golfer.total_score)}
+                    </span>
+                    <span className="w-10 text-center text-[11px] text-gray-500">{golfer.thru || "-"}</span>
+                    <span className="w-10 text-center text-xs text-gray-600 font-mono">{golfer.round1 ?? "-"}</span>
+                    <span className="w-10 text-center text-xs text-gray-600 font-mono">{golfer.round2 ?? "-"}</span>
+                    <span className="w-10 text-center text-xs text-gray-600 font-mono">{golfer.round3 ?? "-"}</span>
+                    <span className="w-10 text-center text-xs text-gray-600 font-mono">{golfer.round4 ?? "-"}</span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
