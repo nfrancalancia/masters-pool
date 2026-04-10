@@ -2,19 +2,10 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { calculateLeaderboard, formatScore, type UserResult, type Golfer } from "@/lib/scoring";
+import { calculateLeaderboard, formatScore, type UserResult, type Golfer, type ScorecardData } from "@/lib/scoring";
 import { golferImageUrl } from "@/lib/golfer-images";
 
 type Tab = "pool" | "field";
-
-interface ScorecardData {
-  rounds: Array<{
-    round: number;
-    strokes: number;
-    displayValue: string;
-    holes: Array<{ hole: number; strokes: number; par: number; score: number }>;
-  }>;
-}
 
 /** Compute movement between current and previous ESPN order */
 function getMovement(position: string | null, prevPosition: string | null): number | null {
@@ -35,8 +26,6 @@ export default function LeaderboardPage() {
   const [tournamentState, setTournamentState] = useState<string>("pre");
   const [activeTab, setActiveTab] = useState<Tab>("pool");
   const [expandedGolferId, setExpandedGolferId] = useState<number | null>(null);
-  const [scorecard, setScorecard] = useState<ScorecardData | null>(null);
-  const [scorecardLoading, setScorecardLoading] = useState(false);
   const [selectedRound, setSelectedRound] = useState<number | null>(null);
 
   const supabase = createClient();
@@ -115,38 +104,35 @@ export default function LeaderboardPage() {
     return () => clearInterval(interval);
   }, [refreshScores, loadLeaderboard]);
 
-  async function toggleGolferExpand(golfer: Golfer) {
+  function toggleGolferExpand(golfer: Golfer) {
     if (expandedGolferId === golfer.id) {
       setExpandedGolferId(null);
-      setScorecard(null);
       setSelectedRound(null);
       return;
     }
 
     setExpandedGolferId(golfer.id);
-    setScorecard(null);
-    setSelectedRound(null);
-    setScorecardLoading(true);
-
-    try {
-      const res = await fetch(`/api/scorecard?espnId=${golfer.espn_id}`);
-      if (res.ok) {
-        const data: ScorecardData = await res.json();
-        setScorecard(data);
-        const latestRound = data.rounds
-          .filter((r) => r.holes && r.holes.length > 0)
-          .map((r) => r.round)
-          .sort((a, b) => b - a)[0];
-        if (latestRound) setSelectedRound(latestRound);
-      }
-    } catch (err) {
-      console.error("Scorecard error:", err);
+    // Default to latest round with hole data, or R1 if none
+    const sc = golfer.scorecard;
+    if (sc && sc.rounds.length > 0) {
+      const latestRound = sc.rounds
+        .filter((r) => r.holes && r.holes.length > 0)
+        .map((r) => r.round)
+        .sort((a, b) => b - a)[0];
+      setSelectedRound(latestRound ?? 1);
+    } else {
+      setSelectedRound(1);
     }
-    setScorecardLoading(false);
   }
 
   // Sort golfers using ESPN's order for stable, deterministic ordering
   const sortedField = [...golfers].sort((a, b) => {
+    // Primary: sort by total_score ascending (lowest wins), nulls last
+    if (a.total_score === null && b.total_score === null) return 0;
+    if (a.total_score === null) return 1;
+    if (b.total_score === null) return -1;
+    if (a.total_score !== b.total_score) return a.total_score - b.total_score;
+    // Tiebreaker: ESPN order (position) for stable ordering among ties
     const aPos = a.position ? parseInt(a.position) : 999;
     const bPos = b.position ? parseInt(b.position) : 999;
     return aPos - bPos;
@@ -154,16 +140,34 @@ export default function LeaderboardPage() {
 
   // Compute display positions with ties from total_score (T1, T1, 3, T4, ...)
   const fieldPositions: Record<number, string> = {};
-  sortedField.forEach((golfer) => {
+  const fieldRank: Record<number, number> = {}; // numeric rank for movement calc
+  sortedField.forEach((golfer, i) => {
     if (golfer.total_score === null) {
       fieldPositions[golfer.id] = "-";
+      fieldRank[golfer.id] = i + 1;
       return;
     }
     const firstIdx = sortedField.findIndex((g) => g.total_score === golfer.total_score);
     const tiedCount = sortedField.filter((g) => g.total_score === golfer.total_score).length;
     const pos = firstIdx + 1;
     fieldPositions[golfer.id] = tiedCount > 1 ? `T${pos}` : `${pos}`;
+    fieldRank[golfer.id] = i + 1;
   });
+
+  // Compute previous ranks from prev_position (ESPN order before last update)
+  // Sort by prev_position to get old ordering, then assign old ranks
+  const prevRank: Record<number, number> = {};
+  const hasPrevPositions = golfers.some((g) => g.prev_position !== null);
+  if (hasPrevPositions) {
+    const prevSorted = [...golfers].sort((a, b) => {
+      const aPos = a.prev_position ? parseInt(a.prev_position) : 999;
+      const bPos = b.prev_position ? parseInt(b.prev_position) : 999;
+      return aPos - bPos;
+    });
+    prevSorted.forEach((g, i) => {
+      if (g.prev_position) prevRank[g.id] = i + 1;
+    });
+  }
 
   if (loading) {
     return (
@@ -317,7 +321,7 @@ export default function LeaderboardPage() {
                                 </div>
                                 <div className="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
                                   {gs.golfer.odds && <span className="text-gray-400 font-mono text-[10px]">{gs.golfer.odds}</span>}
-                                  {gs.golfer.thru && <span>{gs.golfer.thru === "F" ? "Final" : `Thru ${gs.golfer.thru}`}</span>}
+                                  {gs.golfer.thru && <span>{gs.golfer.thru === "F" ? "Final" : gs.golfer.thru.includes(":") ? gs.golfer.thru : `Thru ${gs.golfer.thru}`}</span>}
                                   {gs.isMissedCut && (
                                     <span className="text-red-500 font-semibold uppercase">
                                       {gs.golfer.status === "cut" ? "MC" : gs.golfer.status}
@@ -342,8 +346,7 @@ export default function LeaderboardPage() {
                             {expandedGolferId === gs.golfer.id && (
                               <InlineScorecard
                                 golfer={gs.golfer}
-                                scorecard={scorecard}
-                                loading={scorecardLoading}
+                                scorecard={gs.golfer.scorecard}
                                 selectedRound={selectedRound}
                                 onSelectRound={setSelectedRound}
                               />
@@ -371,7 +374,7 @@ export default function LeaderboardPage() {
                 <div className="flex-shrink-0 w-6 mr-1"></div>
                 <div className="flex-1 min-w-0 pr-1 py-2 text-[10px] text-gray-500 font-semibold uppercase">Player</div>
                 <div className="flex-shrink-0 w-9 text-center py-2 text-[10px] text-gray-500 font-semibold uppercase">Tot</div>
-                <div className="flex-shrink-0 w-8 text-center py-2 text-[10px] text-gray-500 font-semibold uppercase">Thru</div>
+                <div className="flex-shrink-0 w-12 text-center py-2 text-[10px] text-gray-500 font-semibold uppercase">Thru</div>
                 <div className="flex-shrink-0 w-7 text-center py-2 text-[10px] text-gray-500 font-semibold uppercase">R1</div>
                 <div className="flex-shrink-0 w-7 text-center py-2 text-[10px] text-gray-500 font-semibold uppercase">R2</div>
                 <div className="flex-shrink-0 w-7 text-center py-2 text-[10px] text-gray-500 font-semibold uppercase">R3</div>
@@ -384,7 +387,10 @@ export default function LeaderboardPage() {
                 {sortedField.map((golfer, i) => {
                   const isCut = golfer.status === "cut" || golfer.status === "wd" || golfer.status === "dq";
                   const isExpanded = expandedGolferId === golfer.id;
-                  const movement = getMovement(golfer.position, golfer.prev_position);
+                  // Movement: compare previous rank to current rank
+                  const curR = fieldRank[golfer.id];
+                  const prvR = prevRank[golfer.id];
+                  const movement = prvR !== undefined ? prvR - curR : null;
 
                   return (
                     <div key={golfer.id} className={isCut && !isExpanded ? "opacity-50" : ""}>
@@ -424,7 +430,7 @@ export default function LeaderboardPage() {
                         <div className={`flex-shrink-0 w-9 text-center text-sm font-bold ${totalScoreClass(golfer.total_score ?? 0)}`}>
                           {formatScore(golfer.total_score)}
                         </div>
-                        <div className="flex-shrink-0 w-8 text-center text-[11px] text-gray-500">{golfer.thru || "-"}</div>
+                        <div className={`flex-shrink-0 w-12 text-center text-[10px] ${golfer.thru?.includes(":") ? "text-gray-400" : "text-gray-500"}`}>{golfer.thru || "-"}</div>
                         <div className="flex-shrink-0 w-7 text-center text-[11px] text-gray-600 font-mono">{golfer.round1 ?? "-"}</div>
                         <div className="flex-shrink-0 w-7 text-center text-[11px] text-gray-600 font-mono">{golfer.round2 ?? "-"}</div>
                         <div className="flex-shrink-0 w-7 text-center text-[11px] text-gray-600 font-mono">{golfer.round3 ?? "-"}</div>
@@ -443,8 +449,7 @@ export default function LeaderboardPage() {
                       {isExpanded && (
                         <InlineScorecard
                           golfer={golfer}
-                          scorecard={scorecard}
-                          loading={scorecardLoading}
+                          scorecard={golfer.scorecard}
                           selectedRound={selectedRound}
                           onSelectRound={setSelectedRound}
                         />
@@ -492,52 +497,75 @@ function MovementArrow({ movement }: { movement: number | null }) {
   );
 }
 
+// Augusta National par for each hole
+const AUGUSTA_PAR = [4, 5, 4, 3, 4, 3, 4, 5, 4, 4, 4, 3, 5, 4, 5, 3, 4, 4];
+
 /** Inline scorecard component — shown when a golfer row is expanded */
 function InlineScorecard({
   golfer,
   scorecard,
-  loading,
   selectedRound,
   onSelectRound,
 }: {
   golfer: Golfer;
   scorecard: ScorecardData | null;
-  loading: boolean;
   selectedRound: number | null;
   onSelectRound: (r: number) => void;
 }) {
   const isCut = golfer.status === "cut" || golfer.status === "wd" || golfer.status === "dq";
-  const roundValues = [
-    { num: 1, value: golfer.round1 },
-    { num: 2, value: golfer.round2 },
-    { num: 3, value: golfer.round3 },
-    { num: 4, value: golfer.round4 },
-  ];
+  // For each round, show the DB round value if complete, otherwise show in-progress strokes from scorecard
+  const roundValues = [golfer.round1, golfer.round2, golfer.round3, golfer.round4].map((val, i) => {
+    const num = i + 1;
+    if (val !== null) return { num, value: val };
+    // Check if there's in-progress scorecard data for this round
+    const roundData = scorecard?.rounds.find((r) => r.round === num && r.holes && r.holes.length > 0);
+    if (roundData) {
+      const scoreToPar = roundData.holes.reduce((s, h) => s + (h.score ?? 0), 0);
+      return { num, value: scoreToPar, inProgress: true };
+    }
+    return { num, value: null };
+  });
 
   const activeRoundData = scorecard?.rounds.find(
     (r) => r.round === selectedRound && r.holes && r.holes.length > 0
   );
 
+  // Build full 18-hole display: played holes from data, "-" for unplayed
+  const fullHoles = AUGUSTA_PAR.map((par, i) => {
+    const holeNum = i + 1;
+    const holeData = activeRoundData?.holes.find((h) => h.hole === holeNum);
+    return {
+      hole: holeNum,
+      par,
+      strokes: holeData?.strokes ?? null,
+      score: holeData?.score ?? null,
+    };
+  });
+
+  const playedHoles = fullHoles.filter((h) => h.strokes !== null);
+  const totalStrokes = playedHoles.reduce((s, h) => s + (h.strokes ?? 0), 0);
+
   return (
     <div className="border-t border-gray-100 bg-gray-50/80 px-3 py-3">
       {/* Clickable round tiles */}
       <div className="grid grid-cols-4 gap-1.5 mb-3">
-        {roundValues.map(({ num, value }) => {
-          const isActive = selectedRound === num;
-          const hasData = scorecard?.rounds.some((r) => r.round === num && r.holes && r.holes.length > 0);
+        {roundValues.map((rv) => {
+          const isActive = selectedRound === rv.num;
+          const hasData = scorecard?.rounds.some((r) => r.round === rv.num && r.holes && r.holes.length > 0);
+          const inProgress = "inProgress" in rv && rv.inProgress;
           return (
             <button
-              key={num}
-              onClick={() => onSelectRound(num)}
+              key={rv.num}
+              onClick={() => onSelectRound(rv.num)}
               className={`rounded-md p-2 text-center border transition-colors ${
                 isActive
                   ? "border-[#006747] bg-[#006747]/5 ring-1 ring-[#006747]"
                   : "border-gray-100 bg-white hover:border-gray-300"
               } ${hasData ? "cursor-pointer" : ""}`}
             >
-              <p className={`text-[9px] uppercase font-semibold ${isActive ? "text-[#006747]" : "text-gray-400"}`}>R{num}</p>
+              <p className={`text-[9px] uppercase font-semibold ${isActive ? "text-[#006747]" : "text-gray-400"}`}>R{rv.num}</p>
               <p className={`text-base font-bold font-mono ${isActive ? "text-[#006747]" : "text-gray-900"}`}>
-                {value ?? "-"}
+                {rv.value === null ? "-" : inProgress ? formatScore(rv.value) : rv.value}
               </p>
             </button>
           );
@@ -551,79 +579,79 @@ function InlineScorecard({
         </p>
       )}
 
-      {/* Hole-by-hole scorecard */}
-      {loading && (
-        <div className="flex items-center justify-center py-4">
-          <div className="animate-spin w-5 h-5 border-2 border-[#006747] border-t-transparent rounded-full" />
-        </div>
-      )}
-
-      {activeRoundData && (
+      {/* Hole-by-hole scorecard — always show all 18 holes */}
+      {selectedRound !== null && (
         <div>
           <div className="overflow-x-auto -mx-3 px-3 pb-1">
             <table className="min-w-max border-collapse">
               <thead>
                 <tr>
                   <td className="w-10 pr-1 py-0.5 text-[9px] text-gray-400 font-semibold text-right">Hole</td>
-                  {activeRoundData.holes.map((h) => (
+                  {fullHoles.map((h) => (
                     <td key={h.hole} className="w-7 py-0.5 text-center text-[9px] text-gray-400 font-semibold">{h.hole}</td>
                   ))}
                   <td className="w-8 py-0.5 text-center text-[9px] text-gray-500 font-bold border-l border-gray-200 pl-1">Tot</td>
                 </tr>
                 <tr>
                   <td className="w-10 pr-1 py-0.5 text-[9px] text-gray-400 font-semibold text-right">Par</td>
-                  {activeRoundData.holes.map((h) => (
+                  {fullHoles.map((h) => (
                     <td key={h.hole} className="w-7 py-0.5 text-center text-[10px] text-gray-500 font-mono">{h.par}</td>
                   ))}
                   <td className="w-8 py-0.5 text-center text-[10px] text-gray-500 font-mono font-bold border-l border-gray-200 pl-1">
-                    {activeRoundData.holes.reduce((s, h) => s + h.par, 0)}
+                    72
                   </td>
                 </tr>
               </thead>
               <tbody>
                 <tr>
                   <td className="w-10 pr-1 py-0.5 text-[9px] text-gray-400 font-semibold text-right">Score</td>
-                  {activeRoundData.holes.map((h) => (
+                  {fullHoles.map((h) => (
                     <td key={h.hole} className="w-7 py-0.5">
                       <div className="flex items-center justify-center">
-                        <HoleScore strokes={h.strokes} score={h.score} />
+                        {h.strokes !== null ? (
+                          <HoleScore strokes={h.strokes} score={h.score!} />
+                        ) : (
+                          <span className="text-[10px] text-gray-300 font-mono">-</span>
+                        )}
                       </div>
                     </td>
                   ))}
                   <td className="w-8 py-0.5 text-center font-mono font-bold text-sm border-l border-gray-200 pl-1">
-                    {activeRoundData.strokes}
+                    {playedHoles.length > 0 ? totalStrokes : "-"}
                   </td>
                 </tr>
               </tbody>
             </table>
           </div>
           {/* Legend */}
-          <div className="flex items-center gap-2 text-[9px] text-gray-400 pt-2 flex-wrap">
-            <span className="flex items-center gap-1">
-              <span className="inline-flex items-center justify-center w-4 h-4 rounded-full border-2 border-green-600 text-[7px] font-bold text-green-700">3</span>
-              Birdie
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="inline-flex items-center justify-center w-[18px] h-[18px] rounded-full border-2 border-yellow-500">
-                <span className="inline-flex items-center justify-center w-3 h-3 rounded-full border border-yellow-500 text-[6px] font-bold text-yellow-700">2</span>
+          {playedHoles.length > 0 && (
+            <div className="flex items-center gap-2 text-[9px] text-gray-400 pt-2 flex-wrap">
+              <span className="flex items-center gap-1">
+                <span className="inline-flex items-center justify-center w-4 h-4 rounded-full border-2 border-green-600 text-[7px] font-bold text-green-700">3</span>
+                Birdie
               </span>
-              Eagle
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="inline-flex items-center justify-center w-4 h-4 border-2 border-red-500 text-[7px] font-bold text-red-600">5</span>
-              Bogey
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="inline-flex items-center justify-center w-[18px] h-[18px] border-2 border-red-700">
-                <span className="inline-flex items-center justify-center w-3 h-3 border border-red-700 text-[6px] font-bold text-red-700">6</span>
+              <span className="flex items-center gap-1">
+                <span className="inline-flex items-center justify-center w-[18px] h-[18px] rounded-full border-2 border-yellow-500">
+                  <span className="inline-flex items-center justify-center w-3 h-3 rounded-full border border-yellow-500 text-[6px] font-bold text-yellow-700">2</span>
+                </span>
+                Eagle
               </span>
-              Dbl+
-            </span>
-          </div>
+              <span className="flex items-center gap-1">
+                <span className="inline-flex items-center justify-center w-4 h-4 border-2 border-red-500 text-[7px] font-bold text-red-600">5</span>
+                Bogey
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="inline-flex items-center justify-center w-[18px] h-[18px] border-2 border-red-700">
+                  <span className="inline-flex items-center justify-center w-3 h-3 border border-red-700 text-[6px] font-bold text-red-700">6</span>
+                </span>
+                Dbl+
+              </span>
+            </div>
+          )}
         </div>
       )}
 
-      {!loading && selectedRound && !activeRoundData && (
+      {selectedRound && !activeRoundData && (
         <p className="text-[10px] text-gray-400 text-center py-1">
           No scorecard data for Round {selectedRound}.
         </p>

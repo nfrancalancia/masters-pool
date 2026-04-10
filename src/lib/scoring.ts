@@ -1,6 +1,23 @@
 // Scoring logic for the Masters Pool
 // Default: Pick 6, drop worst 2, lowest total wins
 
+export interface ScorecardHole {
+  hole: number;
+  strokes: number;
+  par: number;
+  score: number; // relative to par
+}
+
+export interface ScorecardRound {
+  round: number;
+  strokes: number;
+  holes: ScorecardHole[];
+}
+
+export interface ScorecardData {
+  rounds: ScorecardRound[];
+}
+
 export interface Golfer {
   id: number;
   name: string;
@@ -16,6 +33,7 @@ export interface Golfer {
   prev_position: string | null;
   status: "active" | "cut" | "wd" | "dq";
   odds: string | null;
+  scorecard: ScorecardData | null;
 }
 
 export interface Pick {

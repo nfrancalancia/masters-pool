@@ -77,6 +77,7 @@ export async function GET() {
             thru: update.thru,
             position: update.position,
             prev_position: currentPos || null,
+            scorecard: update.scorecard,
             updated_at: update.updated_at,
           })
           .eq("id", dbId);
