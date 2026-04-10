@@ -395,17 +395,17 @@ export default function LeaderboardPage() {
             <div className="min-w-[420px]">
               {/* Column headers */}
               <div className="flex items-center bg-gray-50 border-b border-gray-200">
-                <div className="flex-shrink-0 w-7 pl-1.5 py-2 text-[10px] text-gray-500 font-semibold uppercase">#</div>
-                <div className="flex-shrink-0 w-6 mr-1"></div>
+                <div className="flex-shrink-0 w-6 pl-1 py-2 text-[10px] text-gray-500 font-semibold uppercase">#</div>
+                <div className="flex-shrink-0 w-5 mr-1"></div>
                 <div className="flex-1 min-w-0 pr-1 py-2 text-[10px] text-gray-500 font-semibold uppercase">Player</div>
-                <div className="flex-shrink-0 w-9 text-center py-2 text-[10px] text-gray-500 font-semibold uppercase">Tot</div>
-                <div className="flex-shrink-0 w-9 text-center py-2 text-[10px] text-gray-500 font-semibold uppercase">Today</div>
-                <div className="flex-shrink-0 w-12 text-center py-2 text-[10px] text-gray-500 font-semibold uppercase">Thru</div>
+                <div className="flex-shrink-0 w-8 text-center py-2 text-[10px] text-gray-500 font-semibold uppercase">Tot</div>
+                <div className="flex-shrink-0 w-8 text-center py-2 text-[10px] text-gray-500 font-semibold uppercase">Tdy</div>
+                <div className="flex-shrink-0 w-10 text-center py-2 text-[10px] text-gray-500 font-semibold uppercase">Thru</div>
                 <div className="flex-shrink-0 w-7 text-center py-2 text-[10px] text-gray-500 font-semibold uppercase">R1</div>
                 <div className="flex-shrink-0 w-7 text-center py-2 text-[10px] text-gray-500 font-semibold uppercase">R2</div>
-                <div className="flex-shrink-0 w-7 text-center py-2 text-[10px] text-gray-500 font-semibold uppercase">R3</div>
-                <div className="flex-shrink-0 w-7 text-center py-2 text-[10px] text-gray-500 font-semibold uppercase">R4</div>
-                <div className="flex-shrink-0 w-5"></div>
+                <div className="flex-shrink-0 w-6 text-center py-2 text-[10px] text-gray-500 font-semibold uppercase">R3</div>
+                <div className="flex-shrink-0 w-6 text-center py-2 text-[10px] text-gray-500 font-semibold uppercase">R4</div>
+                <div className="flex-shrink-0 w-4"></div>
               </div>
 
               {/* Rows */}
@@ -425,7 +425,7 @@ export default function LeaderboardPage() {
                         onClick={() => toggleGolferExpand(golfer)}
                         className="w-full flex items-center py-2 text-left hover:bg-green-50/50 transition-colors"
                       >
-                        <div className="flex-shrink-0 w-7 pl-1.5 text-xs font-bold text-gray-500">
+                        <div className="flex-shrink-0 w-6 pl-1 text-xs font-bold text-gray-500">
                           {fieldPositions[golfer.id] || (i + 1)}
                         </div>
                         <div className="flex-shrink-0 w-5 h-5 rounded-full overflow-hidden bg-gray-200 mr-1">
@@ -453,18 +453,18 @@ export default function LeaderboardPage() {
                             </span>
                           )}
                         </div>
-                        <div className={`flex-shrink-0 w-9 text-center text-sm font-bold ${totalScoreClass(golfer.total_score ?? 0)}`}>
+                        <div className={`flex-shrink-0 w-8 text-center text-sm font-bold ${totalScoreClass(golfer.total_score ?? 0)}`}>
                           {golfer.total_score === 0 && !golfer.round1 ? "-" : formatScore(golfer.total_score)}
                         </div>
-                        <div className={`flex-shrink-0 w-9 text-center text-[11px] font-semibold ${todayScore[golfer.id] !== null ? totalScoreClass(todayScore[golfer.id]!) : "text-gray-400"}`}>
+                        <div className={`flex-shrink-0 w-8 text-center text-[11px] font-semibold ${todayScore[golfer.id] !== null ? totalScoreClass(todayScore[golfer.id]!) : "text-gray-400"}`}>
                           {todayScore[golfer.id] !== null ? formatScore(todayScore[golfer.id]!) : "-"}
                         </div>
-                        <div className={`flex-shrink-0 w-12 text-center text-[10px] ${golfer.thru?.includes(":") ? "text-gray-400" : "text-gray-500"}`}>{golfer.thru || "-"}</div>
+                        <div className={`flex-shrink-0 w-10 text-center text-[10px] ${golfer.thru?.includes(":") ? "text-gray-400" : "text-gray-500"}`}>{golfer.thru || "-"}</div>
                         <div className="flex-shrink-0 w-7 text-center text-[11px] text-gray-600 font-mono">{golfer.round1 ?? "-"}</div>
                         <div className="flex-shrink-0 w-7 text-center text-[11px] text-gray-600 font-mono">{golfer.round2 ?? "-"}</div>
-                        <div className="flex-shrink-0 w-7 text-center text-[11px] text-gray-600 font-mono">{golfer.round3 ?? "-"}</div>
-                        <div className="flex-shrink-0 w-7 text-center text-[11px] text-gray-600 font-mono">{golfer.round4 ?? "-"}</div>
-                        <div className="flex-shrink-0 w-5 pr-1">
+                        <div className="flex-shrink-0 w-6 text-center text-[11px] text-gray-600 font-mono">{golfer.round3 ?? "-"}</div>
+                        <div className="flex-shrink-0 w-6 text-center text-[11px] text-gray-600 font-mono">{golfer.round4 ?? "-"}</div>
+                        <div className="flex-shrink-0 w-4 pr-1">
                           <svg
                             className={`w-4 h-4 text-gray-300 transition-transform ${isExpanded ? "rotate-180" : ""}`}
                             fill="none" stroke="currentColor" viewBox="0 0 24 24"
