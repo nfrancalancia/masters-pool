@@ -56,13 +56,26 @@ export default function NavBar() {
   return (
     <header className="masters-gradient text-white shadow-lg">
       <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
-        <a href="/" className="flex items-center gap-2 min-w-0">
-          <div className="w-9 h-9 rounded-full bg-[#f2c75c] flex items-center justify-center text-[#006747] font-bold text-base flex-shrink-0">
-            M
+        <a href="/" className="flex items-center gap-2.5 min-w-0">
+          <div className="flex-shrink-0 w-9 h-9 flex items-center justify-center">
+            <svg viewBox="0 0 32 40" className="w-7 h-9" fill="none" xmlns="http://www.w3.org/2000/svg">
+              {/* Flag */}
+              <path d="M6 2C6 2 6 4 14 4C22 4 22 10 14 10C6 10 6 12 6 12" fill="#f2c75c" stroke="#f2c75c" strokeWidth="0.5"/>
+              {/* Pole */}
+              <line x1="6" y1="1" x2="6" y2="36" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+              {/* Ball on ground */}
+              <circle cx="6" cy="37" r="2.5" fill="white" opacity="0.9"/>
+            </svg>
           </div>
           <div className="min-w-0">
-            <h1 className="text-lg font-bold tracking-tight leading-tight">Masters Pool 2026</h1>
-            <p className="text-[10px] text-green-200 tracking-wide">Augusta National | Apr 10-13</p>
+            <h1 className="text-xl font-black tracking-tight leading-tight" style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}>
+              Masters Pool 2026
+            </h1>
+            <p className="text-[10px] text-green-200/80 tracking-widest uppercase flex items-center gap-1.5">
+              Augusta National
+              <span className="text-[#f2c75c] text-[8px]">&#9670;</span>
+              Apr 10–13
+            </p>
           </div>
         </a>
 

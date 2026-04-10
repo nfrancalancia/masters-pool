@@ -178,24 +178,24 @@ export default function LeaderboardPage() {
 
   return (
     <div>
-      {/* Header */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-[#006747]">Pool Leaderboard</h2>
-          <div className="text-right text-xs text-gray-400">
-            <p>
-              <span className={`font-semibold ${tournamentState === "in" ? "text-green-600" : "text-gray-600"}`}>
-                {tournamentState === "pre" ? "Not Started" : tournamentState === "in" ? "LIVE" : "Final"}
-              </span>
-            </p>
-            {lastUpdated && <p>{lastUpdated}</p>}
-            <button
-              onClick={() => { refreshScores().then(() => loadLeaderboard()); }}
-              className="mt-1 text-[#006747] underline hover:no-underline"
-            >
-              Refresh
-            </button>
-          </div>
+      {/* Section header — flush, no card */}
+      <div className="flex items-center justify-between mb-4 px-1">
+        <h2 className="text-xl font-black text-[#006747]" style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}>
+          Leaderboard
+        </h2>
+        <div className="text-right text-xs text-gray-400">
+          <p>
+            <span className={`font-semibold ${tournamentState === "in" ? "text-green-600" : "text-gray-600"}`}>
+              {tournamentState === "pre" ? "Not Started" : tournamentState === "in" ? "LIVE" : "Final"}
+            </span>
+          </p>
+          {lastUpdated && <p>{lastUpdated}</p>}
+          <button
+            onClick={() => { refreshScores().then(() => loadLeaderboard()); }}
+            className="mt-1 text-[#006747] underline hover:no-underline"
+          >
+            Refresh
+          </button>
         </div>
       </div>
 
