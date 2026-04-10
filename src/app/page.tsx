@@ -123,12 +123,30 @@ export default function LeaderboardPage() {
     setScorecardLoading(false);
   }
 
-  // Sort golfers by position for field view
+  // Sort golfers by total score for field view, then compute tied positions
   const sortedField = [...golfers].sort((a, b) => {
-    const aPos = a.position ? parseInt(a.position) : 999;
-    const bPos = b.position ? parseInt(b.position) : 999;
-    if (aPos !== bPos) return aPos - bPos;
-    return (a.total_score ?? 999) - (b.total_score ?? 999);
+    // Active players first, then cut/wd/dq
+    const aOut = a.status === "cut" || a.status === "wd" || a.status === "dq";
+    const bOut = b.status === "cut" || b.status === "wd" || b.status === "dq";
+    if (aOut !== bOut) return aOut ? 1 : -1;
+    // Sort by total score (lowest first), nulls last
+    const aScore = a.total_score ?? 999;
+    const bScore = b.total_score ?? 999;
+    return aScore - bScore;
+  });
+
+  // Compute standard golf positions with ties (T1, T1, 3, T4, T4, T4, 7, ...)
+  const fieldPositions: Record<number, string> = {};
+  sortedField.forEach((golfer, i) => {
+    if (golfer.total_score === null) {
+      fieldPositions[golfer.id] = "-";
+      return;
+    }
+    // Find first index with same score
+    const firstIdx = sortedField.findIndex((g) => g.total_score === golfer.total_score);
+    const lastIdx = sortedField.filter((g) => g.total_score === golfer.total_score).length;
+    const pos = firstIdx + 1;
+    fieldPositions[golfer.id] = lastIdx > 1 ? `T${pos}` : `${pos}`;
   });
 
   if (loading) {
@@ -203,6 +221,8 @@ export default function LeaderboardPage() {
             <div className="space-y-3">
               {leaderboard.map((entry, i) => {
                 const isExpanded = expandedUser === entry.userId;
+                const isTied = leaderboard.filter((e) => e.rank === entry.rank).length > 1;
+                const displayRank = isTied ? `T${entry.rank}` : `${entry.rank}`;
                 return (
                   <div
                     key={entry.userId}
@@ -217,12 +237,12 @@ export default function LeaderboardPage() {
                     >
                       <div className="flex-shrink-0 w-8">
                         {entry.rank === 1 && i === 0 ? (
-                          <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-[#f2c75c] text-[#006747] text-sm font-bold">
-                            {entry.rank}
+                          <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-[#f2c75c] text-[#006747] text-xs font-bold">
+                            {displayRank}
                           </span>
                         ) : (
-                          <span className="inline-flex items-center justify-center w-8 h-8 text-gray-500 font-bold text-sm">
-                            {entry.rank}
+                          <span className="inline-flex items-center justify-center w-8 h-8 text-gray-500 font-bold text-xs">
+                            {displayRank}
                           </span>
                         )}
                       </div>
@@ -278,7 +298,6 @@ export default function LeaderboardPage() {
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2">
                                   <span className="font-semibold text-sm truncate">{gs.golfer.name}</span>
-                                  <span className="text-[10px] text-gray-400 font-mono flex-shrink-0">T{gs.tier}</span>
                                 </div>
                                 <div className="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
                                   {gs.golfer.odds && <span className="text-gray-400 font-mono text-[10px]">{gs.golfer.odds}</span>}
@@ -332,8 +351,8 @@ export default function LeaderboardPage() {
             <table className="w-full min-w-[520px] border-collapse">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-200">
-                  <th className="sticky left-0 z-10 bg-gray-50 w-7 pl-3 py-2 text-left text-[10px] text-gray-500 font-semibold uppercase">#</th>
-                  <th className="sticky left-7 z-10 bg-gray-50 py-2 text-left text-[10px] text-gray-500 font-semibold uppercase min-w-[120px] sm:min-w-[170px]">Player</th>
+                  <th className="sticky left-0 z-10 bg-gray-50 w-10 pl-2 py-2 text-left text-[10px] text-gray-500 font-semibold uppercase">#</th>
+                  <th className="sticky left-10 z-10 bg-gray-50 py-2 text-left text-[10px] text-gray-500 font-semibold uppercase min-w-[120px] sm:min-w-[170px]">Player</th>
                   <th className="w-12 py-2 text-center text-[10px] text-gray-500 font-semibold uppercase">Tot</th>
                   <th className="w-10 py-2 text-center text-[10px] text-gray-500 font-semibold uppercase">Thru</th>
                   <th className="w-10 py-2 text-center text-[10px] text-gray-500 font-semibold uppercase">R1</th>
@@ -358,7 +377,7 @@ export default function LeaderboardPage() {
                           {/* Expanded: show player row + scorecard */}
                           <div className="flex items-center px-3 py-2">
                             <div className="w-7 flex-shrink-0 text-xs font-bold text-gray-500">
-                              {golfer.position || (i + 1)}
+                              {fieldPositions[golfer.id] || (i + 1)}
                             </div>
                             <div className="flex items-center gap-1.5 flex-1 min-w-0">
                               <div className="flex-shrink-0 w-6 h-6 rounded-full overflow-hidden bg-gray-200">
@@ -377,14 +396,11 @@ export default function LeaderboardPage() {
                               </div>
                               <div className="min-w-0">
                                 <p className="text-[12px] sm:text-sm font-semibold truncate">{golfer.name}</p>
-                                <div className="flex items-center gap-1">
-                                  <span className="text-[9px] text-gray-400 font-mono">T{golfer.tier}</span>
-                                  {isCut && (
-                                    <span className="text-[9px] text-red-500 font-semibold uppercase">
-                                      {golfer.status === "cut" ? "MC" : golfer.status}
-                                    </span>
-                                  )}
-                                </div>
+                                {isCut && (
+                                  <span className="text-[9px] text-red-500 font-semibold uppercase">
+                                    {golfer.status === "cut" ? "MC" : golfer.status}
+                                  </span>
+                                )}
                               </div>
                             </div>
                             <span className={`text-sm font-bold ${totalScoreClass(golfer.total_score ?? 0)}`}>
@@ -406,10 +422,10 @@ export default function LeaderboardPage() {
                         </td>
                       ) : (
                         <>
-                          <td className="sticky left-0 z-10 bg-white pl-3 py-2 text-xs font-bold text-gray-500">
-                            {golfer.position || (i + 1)}
+                          <td className="sticky left-0 z-10 bg-white pl-2 py-2 text-xs font-bold text-gray-500">
+                            {fieldPositions[golfer.id] || (i + 1)}
                           </td>
-                          <td className="sticky left-7 z-10 bg-white py-2">
+                          <td className="sticky left-10 z-10 bg-white py-2">
                             <div className="flex items-center gap-1.5 min-w-0 pr-2">
                               <div className="flex-shrink-0 w-6 h-6 rounded-full overflow-hidden bg-gray-200">
                                 {golfer.espn_id ? (
@@ -427,14 +443,11 @@ export default function LeaderboardPage() {
                               </div>
                               <div className="min-w-0">
                                 <p className="text-[12px] sm:text-sm font-semibold truncate">{golfer.name}</p>
-                                <div className="flex items-center gap-1">
-                                  <span className="text-[9px] text-gray-400 font-mono">T{golfer.tier}</span>
-                                  {isCut && (
-                                    <span className="text-[9px] text-red-500 font-semibold uppercase">
-                                      {golfer.status === "cut" ? "MC" : golfer.status}
-                                    </span>
-                                  )}
-                                </div>
+                                {isCut && (
+                                  <span className="text-[9px] text-red-500 font-semibold uppercase">
+                                    {golfer.status === "cut" ? "MC" : golfer.status}
+                                  </span>
+                                )}
                               </div>
                             </div>
                           </td>
