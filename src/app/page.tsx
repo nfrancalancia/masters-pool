@@ -129,14 +129,25 @@ export default function LeaderboardPage() {
   // Sort golfers using ESPN's order for stable, deterministic ordering
   // Determine who missed the cut: R2 cumulative > +4 OR status is cut/wd/dq
   const CUT_SCORE = 4;
+  // Compute R2 cumulative score-to-par from any available source
+  function r2CumulativeScore(g: Golfer): number | null {
+    // Try round1/round2 columns first
+    if (g.round1 !== null && g.round2 !== null) return g.round1 + g.round2 - 144;
+    // Fall back to scorecard JSONB
+    if (g.scorecard?.rounds) {
+      const r1 = g.scorecard.rounds.find((r) => r.round === 1);
+      const r2 = g.scorecard.rounds.find((r) => r.round === 2);
+      if (r1 && r2 && r1.holes.length === 18 && r2.holes.length === 18) {
+        return r1.strokes + r2.strokes - 144;
+      }
+    }
+    return null;
+  }
   function missedCut(g: Golfer): boolean {
     if (g.status === "cut" || g.status === "wd" || g.status === "dq") return true;
-    if (g.round1 !== null && g.round2 !== null && (g.round1 + g.round2 - 144) > CUT_SCORE) return true;
+    const r2 = r2CumulativeScore(g);
+    if (r2 !== null && r2 > CUT_SCORE) return true;
     return false;
-  }
-  function r2CumulativeScore(g: Golfer): number | null {
-    if (g.round1 !== null && g.round2 !== null) return g.round1 + g.round2 - 144;
-    return null;
   }
 
   const sortedField = [...golfers].sort((a, b) => {
