@@ -569,9 +569,9 @@ export default function LeaderboardPage() {
                             <p className="text-xs sm:text-sm font-semibold truncate">{golfer.name}</p>
                             <MovementArrow movement={movement} />
                           </div>
-                          {isCut && (
+                          {isMC && (
                             <span className="text-[9px] text-red-500 font-semibold uppercase">
-                              {golfer.status === "cut" ? "MC" : golfer.status}
+                              {golfer.status === "wd" ? "WD" : golfer.status === "dq" ? "DQ" : "MC"}
                             </span>
                           )}
                         </div>
