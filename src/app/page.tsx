@@ -127,13 +127,36 @@ export default function LeaderboardPage() {
   }
 
   // Sort golfers using ESPN's order for stable, deterministic ordering
+  // Determine who missed the cut: R2 cumulative > +4 OR status is cut/wd/dq
+  const CUT_SCORE = 4;
+  function missedCut(g: Golfer): boolean {
+    if (g.status === "cut" || g.status === "wd" || g.status === "dq") return true;
+    if (g.round1 !== null && g.round2 !== null && (g.round1 + g.round2 - 144) > CUT_SCORE) return true;
+    return false;
+  }
+  function r2CumulativeScore(g: Golfer): number | null {
+    if (g.round1 !== null && g.round2 !== null) return g.round1 + g.round2 - 144;
+    return null;
+  }
+
   const sortedField = [...golfers].sort((a, b) => {
-    // WD/DQ/Cut players sort to the bottom
-    const aOut = a.status === "wd" || a.status === "dq" || a.status === "cut";
-    const bOut = b.status === "wd" || b.status === "dq" || b.status === "cut";
+    // Players who missed the cut always sort below those who made it
+    const aOut = missedCut(a);
+    const bOut = missedCut(b);
     if (aOut && !bOut) return 1;
     if (!aOut && bOut) return -1;
-    // Primary: sort by total_score ascending (lowest wins), nulls last
+    if (aOut && bOut) {
+      // Both missed cut: sort by R2 cumulative score ascending (less bad first)
+      const aR2 = r2CumulativeScore(a);
+      const bR2 = r2CumulativeScore(b);
+      if (aR2 !== null && bR2 !== null && aR2 !== bR2) return aR2 - bR2;
+      // WD/DQ sort after cut players
+      const aWd = a.status === "wd" || a.status === "dq" ? 1 : 0;
+      const bWd = b.status === "wd" || b.status === "dq" ? 1 : 0;
+      if (aWd !== bWd) return aWd - bWd;
+      return 0;
+    }
+    // Both made the cut: sort by total_score ascending (lowest wins), nulls last
     if (a.total_score === null && b.total_score === null) return 0;
     if (a.total_score === null) return 1;
     if (b.total_score === null) return -1;
@@ -144,20 +167,27 @@ export default function LeaderboardPage() {
     return aPos - bPos;
   });
 
-  // Compute display positions with ties from total_score (T1, T1, 3, T4, ...)
+  // Compute display positions — only rank players who made the cut
   const fieldPositions: Record<number, string> = {};
   const fieldRank: Record<number, number> = {}; // numeric rank for movement calc
-  sortedField.forEach((golfer, i) => {
+  const activePlayers = sortedField.filter((g) => !missedCut(g));
+  activePlayers.forEach((golfer, i) => {
     if (golfer.total_score === null) {
       fieldPositions[golfer.id] = "-";
       fieldRank[golfer.id] = i + 1;
       return;
     }
-    const firstIdx = sortedField.findIndex((g) => g.total_score === golfer.total_score);
-    const tiedCount = sortedField.filter((g) => g.total_score === golfer.total_score).length;
+    const firstIdx = activePlayers.findIndex((g) => g.total_score === golfer.total_score);
+    const tiedCount = activePlayers.filter((g) => g.total_score === golfer.total_score).length;
     const pos = firstIdx + 1;
     fieldPositions[golfer.id] = tiedCount > 1 ? `T${pos}` : `${pos}`;
     fieldRank[golfer.id] = i + 1;
+  });
+  // Missed cut players get MC/WD/DQ label instead of position
+  sortedField.filter((g) => missedCut(g)).forEach((golfer) => {
+    if (golfer.status === "wd") fieldPositions[golfer.id] = "WD";
+    else if (golfer.status === "dq") fieldPositions[golfer.id] = "DQ";
+    else fieldPositions[golfer.id] = "MC";
   });
 
   // Track rank changes between refreshes for highlight animations
@@ -466,22 +496,16 @@ export default function LeaderboardPage() {
                 {(() => {
                   let cutLineShown = false;
                   return sortedField.map((golfer, i) => {
-                  const isCut = golfer.status === "cut" || golfer.status === "wd" || golfer.status === "dq";
+                  const isMC = missedCut(golfer);
                   const isExpanded = expandedGolferId === golfer.id;
-                  // Movement: compare previous round's final rank to current rank
+                  // Movement: only for active players
                   const curRank = fieldRank[golfer.id] ?? null;
                   const prevRank = prevRoundRank[golfer.id] ?? null;
-                  const movement = curRank !== null && prevRank !== null ? prevRank - curRank : null;
+                  const movement = !isMC && curRank !== null && prevRank !== null ? prevRank - curRank : null;
 
-                  // Cut line: based on R2 cumulative score (round1 + round2 - 144 = score to par after R2)
-                  const CUT_SCORE = 4; // +4 cut line
-                  const r2Score = (golfer.round1 !== null && golfer.round2 !== null)
-                    ? (golfer.round1 + golfer.round2 - 144) : null;
-                  const missedCut = golfer.status === "cut" || (r2Score !== null && r2Score > CUT_SCORE);
-                  const showCutLine = !cutLineShown && isCut;
+                  // Show cut line once, right before the first missed-cut player
+                  const showCutLine = !cutLineShown && isMC;
                   if (showCutLine) cutLineShown = true;
-
-                  const belowCut = golfer.status === "wd" || golfer.status === "dq" || missedCut;
 
                   const change = rankChange[golfer.id];
                   const changeBorder = change === "up"
@@ -506,7 +530,7 @@ export default function LeaderboardPage() {
                           <div className="flex-1 border-t border-dashed border-red-300" />
                         </div>
                       )}
-                      <div className={belowCut && !isExpanded ? "opacity-50" : ""}>
+                      <div className={isMC && !isExpanded ? "opacity-50" : ""}>
                       {/* Row */}
                       <button
                         onClick={() => toggleGolferExpand(golfer)}
