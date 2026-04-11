@@ -88,6 +88,10 @@ export async function GET(request: Request) {
         if (update.thru) {
           updateData.thru = update.thru;
         }
+        // Clear thru for cut/wd/dq players so they show "-"
+        if (update.status === "cut" || update.status === "wd" || update.status === "dq") {
+          updateData.thru = null;
+        }
         const { error } = await supabase
           .from("golfers")
           .update(updateData)

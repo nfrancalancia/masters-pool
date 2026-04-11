@@ -471,17 +471,18 @@ export default function LeaderboardPage() {
                   const prevRank = prevRoundRank[golfer.id] ?? null;
                   const movement = curRank !== null && prevRank !== null ? prevRank - curRank : null;
 
-                  // Cut line: show between last player at cutScore and first player above it
-                  const CUT_SCORE = 4; // +4 projected cut
-                  const anyCut = sortedField.some((g) => g.status === "cut");
-                  const prevScore = i > 0 ? sortedField[i - 1].total_score : null;
-                  const showCutLine = !anyCut
-                    ? (golfer.total_score !== null && golfer.total_score > CUT_SCORE && (prevScore === null || prevScore <= CUT_SCORE))
-                    : (isCut && (i === 0 || sortedField[i - 1].status !== "cut" && sortedField[i - 1].status !== "wd" && sortedField[i - 1].status !== "dq"));
+                  // Cut line: based on R2 cumulative score (round1 + round2 - 144 = score to par after R2)
+                  const CUT_SCORE = 4; // +4 cut line
+                  const r2Score = (golfer.round1 !== null && golfer.round2 !== null)
+                    ? (golfer.round1 + golfer.round2 - 144) : null;
+                  const missedCut = golfer.status === "cut" || (r2Score !== null && r2Score > CUT_SCORE);
+                  const prevGolfer = i > 0 ? sortedField[i - 1] : null;
+                  const prevR2 = prevGolfer && prevGolfer.round1 !== null && prevGolfer.round2 !== null
+                    ? (prevGolfer.round1 + prevGolfer.round2 - 144) : null;
+                  const prevMissedCut = prevGolfer ? (prevGolfer.status === "cut" || (prevR2 !== null && prevR2 > CUT_SCORE)) : false;
+                  const showCutLine = (missedCut || isCut) && !prevMissedCut && !(prevGolfer && (prevGolfer.status === "wd" || prevGolfer.status === "dq"));
 
-                  const belowCut = golfer.status === "wd" || golfer.status === "dq" || (!anyCut
-                    ? (golfer.total_score !== null && golfer.total_score > CUT_SCORE)
-                    : isCut);
+                  const belowCut = golfer.status === "wd" || golfer.status === "dq" || missedCut;
 
                   const change = rankChange[golfer.id];
                   const changeBorder = change === "up"
@@ -501,7 +502,7 @@ export default function LeaderboardPage() {
                         <div className="flex items-center gap-2 px-3 py-1.5 bg-red-50/80">
                           <div className="flex-1 border-t border-dashed border-red-300" />
                           <span className="text-[10px] font-semibold text-red-400 uppercase tracking-wide whitespace-nowrap">
-                            {anyCut ? "Cut Line" : `Projected Cut ${formatScore(CUT_SCORE)}`}
+                            {currentRound >= 3 ? "Cut Line" : `Projected Cut ${formatScore(CUT_SCORE)}`}
                           </span>
                           <div className="flex-1 border-t border-dashed border-red-300" />
                         </div>

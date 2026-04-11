@@ -119,21 +119,27 @@ export function mapESPNToGolferUpdate(competitor: ESPNCompetitor) {
   else if (statusType.includes("WITHDRAW")) status = "wd";
   else if (statusType.includes("DQ")) status = "dq";
 
-  // Thru indicator — ESPN doesn't provide status on competitors,
-  // so compute from scorecard using the highest round number
+  // Thru indicator — compute from scorecard data
   let thru = competitor.status?.displayValue || "";
   if (!thru) {
-    // Find the highest round number in linescores (the current/latest round)
-    const highestRound = rounds.length > 0
-      ? rounds.reduce((max: any, r: any) => r.period > max.period ? r : max, rounds[0])
+    // Find the highest round with actual hole data
+    const roundsWithHoles = rounds.filter((r: any) => r.linescores && r.linescores.length > 0);
+    const highestRoundWithHoles = roundsWithHoles.length > 0
+      ? roundsWithHoles.reduce((max: any, r: any) => r.period > max.period ? r : max, roundsWithHoles[0])
       : null;
-    if (highestRound) {
-      const holesPlayed = highestRound.linescores?.length ?? 0;
-      if (holesPlayed > 0) {
-        // Player has started this round
-        thru = holesPlayed >= 18 ? "F" : `${holesPlayed}`;
+    // Find the max round period ESPN knows about (even if no holes yet)
+    const maxRoundPeriod = rounds.length > 0
+      ? Math.max(...rounds.map((r: any) => r.period))
+      : 0;
+    if (highestRoundWithHoles) {
+      const holesPlayed = highestRoundWithHoles.linescores?.length ?? 0;
+      if (holesPlayed >= 18 && highestRoundWithHoles.period < maxRoundPeriod) {
+        // Round is complete but there's a newer round — don't set "F", preserve tee time
+      } else if (holesPlayed >= 18) {
+        thru = "F";
+      } else {
+        thru = `${holesPlayed}`;
       }
-      // If 0 holes played on the latest round, don't set thru — preserve tee time
     }
   }
 
