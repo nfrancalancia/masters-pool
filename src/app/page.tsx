@@ -463,7 +463,9 @@ export default function LeaderboardPage() {
 
               {/* Rows */}
               <div className="divide-y divide-gray-100">
-                {sortedField.map((golfer, i) => {
+                {(() => {
+                  let cutLineShown = false;
+                  return sortedField.map((golfer, i) => {
                   const isCut = golfer.status === "cut" || golfer.status === "wd" || golfer.status === "dq";
                   const isExpanded = expandedGolferId === golfer.id;
                   // Movement: compare previous round's final rank to current rank
@@ -476,11 +478,8 @@ export default function LeaderboardPage() {
                   const r2Score = (golfer.round1 !== null && golfer.round2 !== null)
                     ? (golfer.round1 + golfer.round2 - 144) : null;
                   const missedCut = golfer.status === "cut" || (r2Score !== null && r2Score > CUT_SCORE);
-                  const prevGolfer = i > 0 ? sortedField[i - 1] : null;
-                  const prevR2 = prevGolfer && prevGolfer.round1 !== null && prevGolfer.round2 !== null
-                    ? (prevGolfer.round1 + prevGolfer.round2 - 144) : null;
-                  const prevMissedCut = prevGolfer ? (prevGolfer.status === "cut" || (prevR2 !== null && prevR2 > CUT_SCORE)) : false;
-                  const showCutLine = (missedCut || isCut) && !prevMissedCut && !(prevGolfer && (prevGolfer.status === "wd" || prevGolfer.status === "dq"));
+                  const showCutLine = !cutLineShown && isCut;
+                  if (showCutLine) cutLineShown = true;
 
                   const belowCut = golfer.status === "wd" || golfer.status === "dq" || missedCut;
 
@@ -578,7 +577,8 @@ export default function LeaderboardPage() {
                       </div>
                     </motion.div>
                   );
-                })}
+                });
+                })()}
               </div>
             </div>
           </div>
