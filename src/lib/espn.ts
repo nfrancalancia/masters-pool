@@ -55,7 +55,7 @@ export async function fetchMastersScores(): Promise<{
 } | null> {
   try {
     const res = await fetch(`${ESPN_BASE}/scoreboard`, {
-      next: { revalidate: 60 }, // Cache for 60 seconds
+      next: { revalidate: 30 }, // Cache for 30 seconds
     });
 
     if (!res.ok) {

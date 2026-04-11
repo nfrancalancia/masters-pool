@@ -101,7 +101,7 @@ export default function LeaderboardPage() {
       if (isDuringTournament()) {
         refreshScores().then(() => loadLeaderboard());
       }
-    }, 60000);
+    }, 30000);
     return () => clearInterval(interval);
   }, [refreshScores, loadLeaderboard]);
 
